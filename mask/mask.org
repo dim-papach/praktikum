@@ -1,0 +1,149 @@
+#+title: Mask
+#+property: header-args:python :session pain :results value
+
+
+* Open FITS files
+
+#+begin_src python 
+from astropy.io import fits
+import numpy as np
+from maskfill import maskfill
+import matplotlib.pyplot as plt
+from astropy.visualization import astropy_mpl_style
+from astropy.stats import sigma_clip
+
+h1 = fits.open('HI_6563s.fits')
+o1 = fits.open('O1_6300s.fits')
+n2 = fits.open('N2_6583s.fits')
+
+h1.info()
+n2.info()
+o1.info()
+#+end_src
+
+#+RESULTS:
+: None
+
+We don't use ~fits.getdata()~ because this way we can use more functions of the astropy library
+
+** Data of FITS
+
+Each FITS file has only one HDU (Header Data Unit), so we can get the data as follows:
+
+#+begin_src python
+h_data = h1[0].data
+n_data = n2[0].data
+o_data = o1[0].data
+
+#+end_src
+
+#+RESULTS:
+: None
+
+** Close the FITS files
+
+#+begin_src python
+h1.close()
+n2.close()
+o1.close()
+
+#+end_src
+
+#+RESULTS:
+: None
+
+* Masking the data
+
+** Masking condition
+
+#+begin_src python
+o_clip = sigma_clip(o_data)
+o_clip.mean(), o_data.mean()
+#+end_src
+
+#+RESULTS:
+| 38.624786872821566 | 444.561991585406 |
+
+I use the condition =mask = o_data > o_data.mean()=, because if we use the condition =mask = o_data !=0= we get a lot of noise asswell!
+
+If we wanted an even lower threshold then we could sigma clip the o_data and get that mean
+
+(I think it is way too low so I will keep the o_data)
+
+#+begin_src python
+
+# Mask condition
+mask0 = o_data != 0
+mask1 = o_data > o_data.mean()
+mask2 = o_data > o_clip.mean()
+#+end_src
+
+#+RESULTS:
+: None
+
+** Masking the H and N data
+
+#+begin_src python
+
+def masked_hn(mask):
+    h_mask = np.ma.masked_where(mask, h_data)
+    n_mask = np.ma.masked_where(mask, n_data)
+    return h_mask, n_mask
+
+def vis(mask,name, mask_description):
+
+    fname = "visualizations/" + name + ".png"
+    labels=[r"H$\alpha$ masked", "NII masked"]
+
+    plt.style.use(astropy_mpl_style)
+    # Create a figure with 1 row and 2 columns
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+
+    for i in range(0,2):
+        im = axs[i].imshow(masked_hn(mask)[i], cmap="viridis", origin='lower')
+        axs[i].set_title(labels[i])
+
+    fig.colorbar(im, ax=axs, orientation='vertical',label='Intensity')
+    fig.suptitle("FITS Visualization of Masked Data\nMask = {}".format(mask_description))
+    plt.savefig(fname)
+    plt.close()
+    return print(fname)
+
+def vis_1(mask,dat):
+
+    plt.style.use(astropy_mpl_style)
+
+    plt.imshow(masked_hn(mask)[dat], cmap="viridis", origin='lower')
+
+    plt.colorbar(orientation='vertical',label='Intensity')
+    plt.show()
+
+#+end_src
+
+#+RESULTS:
+: None
+
+*** mask0 = o_data !=0
+
+#+begin_src python :results file output
+vis(mask0,"0", r"OII $\ne$ 0")
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/0.png]]
+
+*** mask1 = o_data > o_data.mean()
+#+begin_src python :results file output
+vis(mask1,"1", r"OII > $\overline{OII}$")
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/1.png]]
+
+*** mask2 = o_data > o_clip.mean()
+#+begin_src python :results file output
+vis(mask2,"2", r"OII > $\overline{OII_{\mathrm{clipped}}}$")
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/2.png]]
