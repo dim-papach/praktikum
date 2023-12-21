@@ -58,11 +58,11 @@ o1.close()
 
 #+begin_src python
 o_clip = sigma_clip(o_data)
-o_clip.mean(), o_data.mean()
+o_clip.mean(), o_data.mean(), o_data.std(), o_clip.std()
 #+end_src
 
 #+RESULTS:
-| 38.624786872821566 | 444.561991585406 |
+| 38.624786872821566 | 444.561991585406 | 4104.227141796538 | 73.21818786426948 |
 
 I use the condition =mask = o_data > o_data.mean()=, because if we use the condition =mask = o_data !=0= we get a lot of noise asswell!
 
@@ -74,8 +74,9 @@ If we wanted an even lower threshold then we could sigma clip the o_data and get
 
 # Mask condition
 masks = [o_data!=0,
+         o_data > o_clip.mean(),
          o_data > o_data.mean(),
-         o_data > o_clip.mean()]
+         o_data >  o_data.mean() + o_data.std()]
 #+end_src
 
 #+RESULTS:
@@ -132,18 +133,84 @@ vis(masks[0],"0", r"OII $\ne$ 0")
 #+RESULTS:
 [[file:visualizations/0.png]]
 
-*** mask1 = o_data > o_data.mean()
+We have a lot of noise in our data
+
+*** mask1 = o_data > o_clip.mean()
 #+begin_src python :results file output
-vis(masks[1],"1", r"OII > $\overline{OII}$")
+vis(masks[1],"1", r"OII > $\overline{OII_{\mathrm{clipped}}}$")
 #+end_src
 
 #+RESULTS:
 [[file:visualizations/1.png]]
 
-*** mask2 = o_data > o_clip.mean()
+It's obvious if we think about it. More later
+
+*** mask2 = o_data > o_data.mean()
 #+begin_src python :results file output
-vis(masks[2],"2", r"OII > $\overline{OII_{\mathrm{clipped}}}$")
+vis(masks[2],"2", r"OII > $\overline{OII}$")
 #+end_src
 
 #+RESULTS:
 [[file:visualizations/2.png]]
+
+*** mask3 = o_data > o_clip.std()
+
+#+begin_src python :results file output
+vis(masks[3],"3", r"OII >  $\overline{OII}$ + $\sigma$")
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/3.png]]
+
+** Pixel distribution (or "Why the \sigma mask is the best")
+
+If we see the pixel distribution we can that we have a lot of "active" pixels in the low magnitudes of the OII. This most likely is the noise of our data and we should ignore it!
+
+#+begin_src python
+pixel_values = o_data.flatten()
+#+end_src
+
+#+RESULTS:
+: None
+
+#+begin_src python :results file output
+fname = "visualizations/distr.png"
+# Create a histogram
+plt.hist(pixel_values, bins=150, log = True)
+
+plt.title('Pixel Distribution in FITS File')
+plt.xlabel('Pixel Value')
+plt.ylabel('Frequency')
+
+# Add vertical lines for mean and mean +/- std
+plt.axvline(0,
+            color='black',
+            linestyle='dashed',
+            linewidth=2,
+            label='0')
+
+plt.axvline(o_data.mean(),
+            color='red',
+            linestyle='dashed',
+            linewidth=2,
+            label= r'$\overline{OII}$'+'= {:.2f}'.format(o_data.mean()) )
+
+plt.axvline(o_data.mean() + o_data.std(),
+            color='green',
+            linestyle='dashed',
+            linewidth=2,
+            label=r'$\overline{OII}$+ 1 $\sigma$ ='+'{:.2f} '.format(o_data.mean() + o_data.std()))
+
+plt.fill_betweenx(y=[0, plt.gca().get_ylim()[1]],
+                  x1 =0, x2 = o_data.mean() + o_data.std(),
+                  color='green', alpha=0.3)
+
+plt.legend()
+
+plt.savefig(fname)
+plt.close()
+print(fname)
+#+end_src
+
+#+RESULTS:
+[[file:]]
