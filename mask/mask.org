@@ -1,6 +1,6 @@
 #+title: Mask
-#+property: header-args:python :session pain :results value
-
+#+property: header-args:python :session pain :results value :exports both
+#+SETUPFILE: /home/dp/org-html-themes/org/theme-readtheorg-local.setup
 
 * Open FITS files
 
@@ -132,6 +132,8 @@ vis(masks[0],"0", r"OII $\ne$ 0")
 
 #+RESULTS:
 [[file:visualizations/0.png]]
+qt.qpa.qgnomeplatform.theme: The desktop style for QtQuick Controls 2 applications is not available on the system (qqc2-desktop-style). The application may look broken.
+visualizations/0.png]]
 
 We have a lot of noise in our data
 
@@ -178,7 +180,7 @@ fname = "visualizations/distr.png"
 # Create a histogram
 plt.hist(pixel_values, bins=150, log = True)
 
-plt.title('Pixel Distribution in FITS File')
+plt.title('Pixel Distribution in OII FITS File')
 plt.xlabel('Pixel Value')
 plt.ylabel('Frequency')
 
@@ -213,4 +215,6 @@ print(fname)
 #+end_src
 
 #+RESULTS:
-[[file:]]
+[[file:visualizations/distr.png]]
+
+* TODO Use Maskfill

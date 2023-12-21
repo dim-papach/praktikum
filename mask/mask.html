@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2023-12-22 Fri 01:53 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mask</title>
+<meta name="generator" content="Org Mode" />
+<link rel="stylesheet" type="text/css" href="src/readtheorg_theme/css/htmlize.css"/>
+<link rel="stylesheet" type="text/css" href="src/readtheorg_theme/css/readtheorg.css"/>
+<script type="text/javascript" src="src/lib/js/jquery.min.js"></script>
+<script type="text/javascript" src="src/lib/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="src/lib/js/jquery.stickytableheaders.min.js"></script>
+<script type="text/javascript" src="src/readtheorg_theme/js/readtheorg.js"></script>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Mask</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#org1524ea0">1. Open FITS files</a>
+<ul>
+<li><a href="#orgb8478d5">1.1. Data of FITS</a></li>
+<li><a href="#org6da6faa">1.2. Close the FITS files</a></li>
+</ul>
+</li>
+<li><a href="#orgd2bc09f">2. Masking the data</a>
+<ul>
+<li><a href="#org26e825f">2.1. Masking condition</a></li>
+<li><a href="#org6d9900b">2.2. Masking the H and N data</a>
+<ul>
+<li><a href="#org13c74a3">2.2.1. mask0 = o<sub>data</sub> !=0</a></li>
+<li><a href="#org9096006">2.2.2. mask1 = o<sub>data</sub> &gt; o<sub>clip.mean</sub>()</a></li>
+<li><a href="#org4c4a8ef">2.2.3. mask2 = o<sub>data</sub> &gt; o<sub>data.mean</sub>()</a></li>
+<li><a href="#org52cf811">2.2.4. mask3 = o<sub>data</sub> &gt; o<sub>clip.std</sub>()</a></li>
+</ul>
+</li>
+<li><a href="#org1cb3ccb">2.3. Pixel distribution (or &ldquo;Why the &sigma; mask is the best&rdquo;)</a></li>
+</ul>
+</li>
+<li><a href="#org54693b1">3. <span class="todo TODO">TODO</span> Use Maskfill</a></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-org1524ea0" class="outline-2">
+<h2 id="org1524ea0"><span class="section-number-2">1.</span> Open FITS files</h2>
+<div class="outline-text-2" id="text-1">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #fb4934;">from</span> astropy.io <span style="color: #fb4934;">import</span> fits
+<span style="color: #fb4934;">import</span> numpy <span style="color: #fb4934;">as</span> np
+<span style="color: #fb4934;">from</span> maskfill <span style="color: #fb4934;">import</span> maskfill
+<span style="color: #fb4934;">import</span> matplotlib.pyplot <span style="color: #fb4934;">as</span> plt
+<span style="color: #fb4934;">from</span> astropy.visualization <span style="color: #fb4934;">import</span> astropy_mpl_style
+<span style="color: #fb4934;">from</span> astropy.stats <span style="color: #fb4934;">import</span> sigma_clip
+
+<span style="color: #83a598;">h1</span> = fits.<span style="color: #fe8019;">open</span>(<span style="color: #b8bb26;">'HI_6563s.fits'</span>)
+<span style="color: #83a598;">o1</span> = fits.<span style="color: #fe8019;">open</span>(<span style="color: #b8bb26;">'O1_6300s.fits'</span>)
+<span style="color: #83a598;">n2</span> = fits.<span style="color: #fe8019;">open</span>(<span style="color: #b8bb26;">'N2_6583s.fits'</span>)
+
+h1.info()
+n2.info()
+o1.info()
+</pre>
+</div>
+
+<pre class="example">
+None
+</pre>
+
+
+<p>
+We don&rsquo;t use <code>fits.getdata()</code> because this way we can use more functions of the astropy library
+</p>
+</div>
+<div id="outline-container-orgb8478d5" class="outline-3">
+<h3 id="orgb8478d5"><span class="section-number-3">1.1.</span> Data of FITS</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Each FITS file has only one HDU (Header Data Unit), so we can get the data as follows:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #83a598;">h_data</span> = h1[<span style="color: #d3869b; font-weight: bold;">0</span>].data
+<span style="color: #83a598;">n_data</span> = n2[<span style="color: #d3869b; font-weight: bold;">0</span>].data
+<span style="color: #83a598;">o_data</span> = o1[<span style="color: #d3869b; font-weight: bold;">0</span>].data
+
+</pre>
+</div>
+
+<pre class="example">
+None
+</pre>
+</div>
+</div>
+<div id="outline-container-org6da6faa" class="outline-3">
+<h3 id="org6da6faa"><span class="section-number-3">1.2.</span> Close the FITS files</h3>
+<div class="outline-text-3" id="text-1-2">
+<div class="org-src-container">
+<pre class="src src-python">h1.close()
+n2.close()
+o1.close()
+
+</pre>
+</div>
+
+<pre class="example">
+None
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgd2bc09f" class="outline-2">
+<h2 id="orgd2bc09f"><span class="section-number-2">2.</span> Masking the data</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+<div id="outline-container-org26e825f" class="outline-3">
+<h3 id="org26e825f"><span class="section-number-3">2.1.</span> Masking condition</h3>
+<div class="outline-text-3" id="text-2-1">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #83a598;">o_clip</span> = sigma_clip(o_data)
+o_clip.mean(), o_data.mean(), o_data.std(), o_clip.std()
+</pre>
+</div>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">38.624786872821566</td>
+<td class="org-right">444.561991585406</td>
+<td class="org-right">4104.227141796538</td>
+<td class="org-right">73.21818786426948</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+I use the condition <code>mask = o_data &gt; o_data.mean()</code>, because if we use the condition <code>mask = o_data !=0</code> we get a lot of noise asswell!
+</p>
+
+<p>
+If we wanted an even lower threshold then we could sigma clip the o<sub>data</sub> and get that mean
+</p>
+
+<p>
+(I think it is way too low so I will keep the o<sub>data</sub>)
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python">
+<span style="color: #928374;"># </span><span style="color: #928374;">Mask condition</span>
+<span style="color: #83a598;">masks</span> = [o_data!=<span style="color: #d3869b; font-weight: bold;">0</span>,
+         o_data &gt; o_clip.mean(),
+         o_data &gt; o_data.mean(),
+         o_data &gt;  o_data.mean() + o_data.std()]
+</pre>
+</div>
+
+<pre class="example">
+None
+</pre>
+</div>
+</div>
+<div id="outline-container-org6d9900b" class="outline-3">
+<h3 id="org6d9900b"><span class="section-number-3">2.2.</span> Masking the H and N data</h3>
+<div class="outline-text-3" id="text-2-2">
+<div class="org-src-container">
+<pre class="src src-python">
+<span style="color: #fb4934;">def</span> <span style="color: #b8bb26;">masked_hn</span>(mask):
+    <span style="color: #83a598;">h_mask</span> = np.ma.masked_where(mask, h_data)
+    <span style="color: #83a598;">n_mask</span> = np.ma.masked_where(mask, n_data)
+    <span style="color: #fb4934;">return</span> h_mask, n_mask
+
+<span style="color: #fb4934;">def</span> <span style="color: #b8bb26;">vis</span>(mask,name, mask_description):
+
+    <span style="color: #83a598;">fname</span> = <span style="color: #b8bb26;">"visualizations/"</span> + name + <span style="color: #b8bb26;">".png"</span>
+    <span style="color: #83a598;">labels</span>=[r<span style="color: #b8bb26;">"H$\alpha$ masked"</span>, <span style="color: #b8bb26;">"NII masked"</span>]
+
+    plt.style.use(astropy_mpl_style)
+    <span style="color: #928374;"># </span><span style="color: #928374;">Create a figure with 1 row and 2 columns</span>
+    <span style="color: #83a598;">fig</span>, <span style="color: #83a598;">axs</span> = plt.subplots(<span style="color: #d3869b; font-weight: bold;">1</span>, <span style="color: #d3869b; font-weight: bold;">2</span>, figsize=(<span style="color: #d3869b; font-weight: bold;">12</span>, <span style="color: #d3869b; font-weight: bold;">6</span>))
+
+    <span style="color: #fb4934;">for</span> i <span style="color: #fb4934;">in</span> <span style="color: #fe8019;">range</span>(<span style="color: #d3869b; font-weight: bold;">0</span>,<span style="color: #d3869b; font-weight: bold;">2</span>):
+        im = axs[i].imshow(masked_hn(mask)[i], cmap=<span style="color: #b8bb26;">"viridis"</span>, origin=<span style="color: #b8bb26;">'lower'</span>)
+        axs[i].set_title(labels[i])
+
+    fig.colorbar(im, ax=axs, orientation=<span style="color: #b8bb26;">'vertical'</span>,label=<span style="color: #b8bb26;">'Intensity'</span>)
+    fig.suptitle(<span style="color: #b8bb26;">"FITS Visualization of Masked Data\nMask = {}"</span>.<span style="color: #fe8019;">format</span>(mask_description))
+    plt.savefig(fname)
+    plt.close()
+    <span style="color: #fb4934;">return</span> <span style="color: #fe8019;">print</span>(fname)
+
+<span style="color: #fb4934;">def</span> <span style="color: #b8bb26;">vis_1</span>(mask,dat):
+
+    plt.style.use(astropy_mpl_style)
+
+    plt.imshow(masked_hn(mask)[dat], cmap=<span style="color: #b8bb26;">"viridis"</span>, origin=<span style="color: #b8bb26;">'lower'</span>)
+
+    plt.colorbar(orientation=<span style="color: #b8bb26;">'vertical'</span>,label=<span style="color: #b8bb26;">'Intensity'</span>)
+    plt.show()
+
+</pre>
+</div>
+
+<pre class="example">
+None
+</pre>
+</div>
+<div id="outline-container-org13c74a3" class="outline-4">
+<h4 id="org13c74a3"><span class="section-number-4">2.2.1.</span> mask0 = o<sub>data</sub> !=0</h4>
+<div class="outline-text-4" id="text-2-2-1">
+<div class="org-src-container">
+<pre class="src src-python">vis(masks[<span style="color: #d3869b; font-weight: bold;">0</span>],<span style="color: #b8bb26;">"0"</span>, r<span style="color: #b8bb26;">"OII $\ne$ 0"</span>)
+</pre>
+</div>
+
+<p>
+<img src="visualizations/0.png" alt="0.png" />
+qt.qpa.qgnomeplatform.theme: The desktop style for QtQuick Controls 2 applications is not available on the system (qqc2-desktop-style). The application may look broken.
+visualizations/0.png]]
+</p>
+
+<p>
+We have a lot of noise in our data
+</p>
+</div>
+</div>
+<div id="outline-container-org9096006" class="outline-4">
+<h4 id="org9096006"><span class="section-number-4">2.2.2.</span> mask1 = o<sub>data</sub> &gt; o<sub>clip.mean</sub>()</h4>
+<div class="outline-text-4" id="text-2-2-2">
+<div class="org-src-container">
+<pre class="src src-python">vis(masks[<span style="color: #d3869b; font-weight: bold;">1</span>],<span style="color: #b8bb26;">"1"</span>, r<span style="color: #b8bb26;">"OII &gt; $\overline{OII_{\mathrm{clipped}}}$"</span>)
+</pre>
+</div>
+
+
+<div id="org974b683" class="figure">
+<p><img src="visualizations/1.png" alt="1.png" />
+</p>
+</div>
+
+<p>
+It&rsquo;s obvious if we think about it. More later
+</p>
+</div>
+</div>
+<div id="outline-container-org4c4a8ef" class="outline-4">
+<h4 id="org4c4a8ef"><span class="section-number-4">2.2.3.</span> mask2 = o<sub>data</sub> &gt; o<sub>data.mean</sub>()</h4>
+<div class="outline-text-4" id="text-2-2-3">
+<div class="org-src-container">
+<pre class="src src-python">vis(masks[<span style="color: #d3869b; font-weight: bold;">2</span>],<span style="color: #b8bb26;">"2"</span>, r<span style="color: #b8bb26;">"OII &gt; $\overline{OII}$"</span>)
+</pre>
+</div>
+
+
+<div id="org69b46cf" class="figure">
+<p><img src="visualizations/2.png" alt="2.png" />
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-org52cf811" class="outline-4">
+<h4 id="org52cf811"><span class="section-number-4">2.2.4.</span> mask3 = o<sub>data</sub> &gt; o<sub>clip.std</sub>()</h4>
+<div class="outline-text-4" id="text-2-2-4">
+<div class="org-src-container">
+<pre class="src src-python">vis(masks[<span style="color: #d3869b; font-weight: bold;">3</span>],<span style="color: #b8bb26;">"3"</span>, r<span style="color: #b8bb26;">"OII &gt;  $\overline{OII}$ + $\sigma$"</span>)
+</pre>
+</div>
+
+
+<div id="orge7aa414" class="figure">
+<p><img src="visualizations/3.png" alt="3.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org1cb3ccb" class="outline-3">
+<h3 id="org1cb3ccb"><span class="section-number-3">2.3.</span> Pixel distribution (or &ldquo;Why the &sigma; mask is the best&rdquo;)</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+If we see the pixel distribution we can that we have a lot of &ldquo;active&rdquo; pixels in the low magnitudes of the OII. This most likely is the noise of our data and we should ignore it!
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #83a598;">pixel_values</span> = o_data.flatten()
+</pre>
+</div>
+
+<pre class="example">
+None
+</pre>
+
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #83a598;">fname</span> = <span style="color: #b8bb26;">"visualizations/distr.png"</span>
+<span style="color: #928374;"># </span><span style="color: #928374;">Create a histogram</span>
+plt.hist(pixel_values, bins=<span style="color: #d3869b; font-weight: bold;">150</span>, log = <span style="color: #d3869b;">True</span>)
+
+plt.title(<span style="color: #b8bb26;">'Pixel Distribution in OII FITS File'</span>)
+plt.xlabel(<span style="color: #b8bb26;">'Pixel Value'</span>)
+plt.ylabel(<span style="color: #b8bb26;">'Frequency'</span>)
+
+<span style="color: #928374;"># </span><span style="color: #928374;">Add vertical lines for mean and mean +/- std</span>
+plt.axvline(<span style="color: #d3869b; font-weight: bold;">0</span>,
+            color=<span style="color: #b8bb26;">'black'</span>,
+            linestyle=<span style="color: #b8bb26;">'dashed'</span>,
+            linewidth=<span style="color: #d3869b; font-weight: bold;">2</span>,
+            label=<span style="color: #b8bb26;">'0'</span>)
+
+plt.axvline(o_data.mean(),
+            color=<span style="color: #b8bb26;">'red'</span>,
+            linestyle=<span style="color: #b8bb26;">'dashed'</span>,
+            linewidth=<span style="color: #d3869b; font-weight: bold;">2</span>,
+            label= r<span style="color: #b8bb26;">'$\overline{OII}$'</span>+<span style="color: #b8bb26;">'= {:.2f}'</span>.<span style="color: #fe8019;">format</span>(o_data.mean()) )
+
+plt.axvline(o_data.mean() + o_data.std(),
+            color=<span style="color: #b8bb26;">'green'</span>,
+            linestyle=<span style="color: #b8bb26;">'dashed'</span>,
+            linewidth=<span style="color: #d3869b; font-weight: bold;">2</span>,
+            label=r<span style="color: #b8bb26;">'$\overline{OII}$+ 1 $\sigma$ ='</span>+<span style="color: #b8bb26;">'{:.2f} '</span>.<span style="color: #fe8019;">format</span>(o_data.mean() + o_data.std()))
+
+plt.fill_betweenx(y=[<span style="color: #d3869b; font-weight: bold;">0</span>, plt.gca().get_ylim()[<span style="color: #d3869b; font-weight: bold;">1</span>]],
+                  x1 =<span style="color: #d3869b; font-weight: bold;">0</span>, x2 = o_data.mean() + o_data.std(),
+                  color=<span style="color: #b8bb26;">'green'</span>, alpha=<span style="color: #d3869b; font-weight: bold;">0.3</span>)
+
+plt.legend()
+
+plt.savefig(fname)
+plt.close()
+<span style="color: #fe8019;">print</span>(fname)
+</pre>
+</div>
+
+
+<div id="orgff2cb73" class="figure">
+<p><img src="visualizations/distr.png" alt="distr.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org54693b1" class="outline-2">
+<h2 id="org54693b1"><span class="section-number-2">3.</span> <span class="todo TODO">TODO</span> Use Maskfill</h2>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Created: 2023-12-22 Fri 01:53</p>
+</div>
+</body>
+</html>
