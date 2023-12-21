@@ -73,9 +73,9 @@ If we wanted an even lower threshold then we could sigma clip the o_data and get
 #+begin_src python
 
 # Mask condition
-mask0 = o_data != 0
-mask1 = o_data > o_data.mean()
-mask2 = o_data > o_clip.mean()
+masks = [o_data!=0,
+         o_data > o_data.mean(),
+         o_data > o_clip.mean()]
 #+end_src
 
 #+RESULTS:
@@ -126,7 +126,7 @@ def vis_1(mask,dat):
 *** mask0 = o_data !=0
 
 #+begin_src python :results file output
-vis(mask0,"0", r"OII $\ne$ 0")
+vis(masks[0],"0", r"OII $\ne$ 0")
 #+end_src
 
 #+RESULTS:
@@ -134,7 +134,7 @@ vis(mask0,"0", r"OII $\ne$ 0")
 
 *** mask1 = o_data > o_data.mean()
 #+begin_src python :results file output
-vis(mask1,"1", r"OII > $\overline{OII}$")
+vis(masks[1],"1", r"OII > $\overline{OII}$")
 #+end_src
 
 #+RESULTS:
@@ -142,7 +142,7 @@ vis(mask1,"1", r"OII > $\overline{OII}$")
 
 *** mask2 = o_data > o_clip.mean()
 #+begin_src python :results file output
-vis(mask2,"2", r"OII > $\overline{OII_{\mathrm{clipped}}}$")
+vis(masks[2],"2", r"OII > $\overline{OII_{\mathrm{clipped}}}$")
 #+end_src
 
 #+RESULTS:
