@@ -7,9 +7,10 @@
 #+begin_src python 
 from astropy.io import fits
 import numpy as np
-from maskfill import maskfill
+from maskfill import maskfill #download from github NOT pip
 import matplotlib.pyplot as plt
 from astropy.visualization import astropy_mpl_style
+from astropy.table import Table
 from astropy.stats import sigma_clip
 
 h1 = fits.open('HI_6563s.fits')
@@ -98,7 +99,7 @@ def vis(mask,name, mask_description):
 
     plt.style.use(astropy_mpl_style)
     # Create a figure with 1 row and 2 columns
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    fig, axs = plt.subplots(1, 2, figsize=(13, 6))
 
     for i in range(0,2):
         im = axs[i].imshow(masked_hn(mask)[i], cmap="viridis", origin='lower')
@@ -110,14 +111,35 @@ def vis(mask,name, mask_description):
     plt.close()
     return print(fname)
 
-def vis_1(mask,dat):
+def vis_1(data):
 
     plt.style.use(astropy_mpl_style)
 
-    plt.imshow(masked_hn(mask)[dat], cmap="viridis", origin='lower')
+    plt.imshow(data, cmap="viridis", origin='lower')
 
     plt.colorbar(orientation='vertical',label='Intensity')
     plt.show()
+    plt.close()
+
+def fill_vis(masked, original, filled, name, mask_description):
+
+    fname = "visualizations/" + name + ".png"
+    labels = ["Masked", "Original", "Maskfill"]
+    data = [masked, original, filled[1]]
+
+    plt.style.use(astropy_mpl_style)
+    # Create a figure with 1 row and 3 columns
+    fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+
+    for i in range(0,3):
+        im = axs[i].imshow(data[i] , cmap="viridis", origin='lower')
+        axs[i].set_title(labels[i])
+
+    fig.colorbar(im, ax=axs, orientation='vertical',label='Intensity')
+    fig.suptitle("FITS Visualization of Masked Data and the Maskfill data of {}".format(mask_description))
+    plt.savefig(fname)
+    plt.close()
+    return print(fname)
 
 #+end_src
 
@@ -132,8 +154,6 @@ vis(masks[0],"0", r"OII $\ne$ 0")
 
 #+RESULTS:
 [[file:visualizations/0.png]]
-qt.qpa.qgnomeplatform.theme: The desktop style for QtQuick Controls 2 applications is not available on the system (qqc2-desktop-style). The application may look broken.
-visualizations/0.png]]
 
 We have a lot of noise in our data
 
@@ -218,3 +238,37 @@ print(fname)
 [[file:visualizations/distr.png]]
 
 * TODO Use Maskfill
+
+#+begin_src python
+h_masked = masked_hn(masks[3])[0]
+n_masked = masked_hn(masks[3])[1]
+#+end_src
+
+#+RESULTS:
+: None
+
+
+#+begin_src python
+h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True)
+n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True)
+#+end_src
+
+#+RESULTS:
+: None
+
+
+#+begin_src python :results file output
+fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI"),
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/HI_fill.png]]
+
+
+#+begin_src python :results file output
+
+fill_vis(n_masked, n_data, n_fill, "NII_fill", "NII")
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/NII_fill.png]]
