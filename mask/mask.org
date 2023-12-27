@@ -135,6 +135,7 @@ masks = [o_data!=0,
 #+end_src
 
 
+
 ** Masking the H and N data
 
 
@@ -179,7 +180,7 @@ pixel_values = o_data.flatten()
 #+begin_src python :results file output
 fname = "visualizations/distr.png"
 # Create a histogram
-plt.hist(pixel_values, bins=150, log = True)
+plt.hist(pixel_values , bins=150, log = True)
 
 plt.title('Pixel Distribution in OII FITS File')
 plt.xlabel('Pixel Value')
@@ -208,6 +209,18 @@ plt.fill_betweenx(y=[0, plt.gca().get_ylim()[1]],
                   x1 =0, x2 = o_data.mean() + o_data.std(),
                   color='green', alpha=0.3)
 
+plt.axvline(o_data.mean() + 3* o_data.std(),
+            color='pink',
+            linestyle='dashed',
+            linewidth=2,
+            label=r'$\overline{OII}$+ 3 $\sigma$ ='+'{:.2f} '.format(o_data.mean() + 3* o_data.std()))
+
+plt.fill_betweenx(y=[0, plt.gca().get_ylim()[1]],
+                  x1 =o_data.mean() + o_data.std(), x2 = o_data.mean() + 3* o_data.std(),
+                  color='pink', alpha=0.6)
+
+
+
 plt.legend()
 
 plt.savefig(fname)
@@ -218,7 +231,10 @@ print(fname)
 #+RESULTS:
 [[file:visualizations/distr.png]]
 
-* TODO Use Maskfill
+
+
+
+* Use Maskfill
 
 #+begin_src python :results none
 h_masked = masked_hn(masks[2])[0]
