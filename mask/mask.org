@@ -177,7 +177,7 @@ pixel_values = o_data.flatten()
 #+end_src
 
 
-#+begin_src python :results file link value
+#+begin_src python :results drawer file link value
 fname = "visualizations/distr.png"
 # Create a histogram
 plt.hist(pixel_values , bins=150, log = True)
@@ -253,7 +253,7 @@ fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI")
 [[file:visualizations/HI_fill.png]]
 
 
-#+begin_src python :results file link
+#+begin_src python :results drawer file link
 
 fill_vis(n_masked, n_data, n_fill, "NII_fill", "NII")
 #+end_src
