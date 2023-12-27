@@ -35,7 +35,7 @@ def vis(mask,name, mask_description):
     fig.suptitle("FITS Visualization of Masked Data\nMask = {}".format(mask_description))
     plt.savefig(fname)
     plt.close()
-    return print(fname)
+    return fname
 
 def vis_1(data, name):
 
@@ -49,7 +49,7 @@ def vis_1(data, name):
     plt.colorbar(orientation='vertical',label='Intensity')
     plt.savefig(fname)
     plt.close()
-    return print(fname)
+    return fname
 
 def fill_vis(masked, original, filled, name, mask_description):
 
@@ -69,7 +69,7 @@ def fill_vis(masked, original, filled, name, mask_description):
     fig.suptitle("FITS Visualization of Masked Data and the Maskfill data of {}".format(mask_description))
     plt.savefig(fname)
     plt.close()
-    return print(fname)
+    return fname
 
 #+end_src
 
@@ -97,7 +97,7 @@ o1.close()
 - We don't use ~fits.getdata()~ because this way we can use more functions of the astropy library
 - Each FITS file has only one HDU (Header Data Unit), so we can get the data from the PrimaryHDU:
 
-#+begin_src python :results file output
+#+begin_src python :results file link
 vis_1(h_data,"HI")
 #+end_src
 
@@ -106,14 +106,14 @@ vis_1(h_data,"HI")
 
 
 
-#+begin_src python :results file output
+#+begin_src python :results file link
 vis_1(n_data,"NI")
 #+end_src
 
 #+RESULTS:
 [[file:visualizations/NI.png]]
 
-#+begin_src python :results file output
+#+begin_src python :results file link
 vis_1(o_data,"OII")
 #+end_src
 
@@ -147,12 +147,12 @@ vis(masks[0],"0", r"OII $\ne$ 0")
 #+end_src
 
 #+RESULTS:
-[[file:visualizations/mask_0.png]]
+[[file:]]
 
 We have a lot of noise in our data
 
 *** mask1 = o_data > o_data.mean()
-#+begin_src python :results file output
+#+begin_src python :results file link
 vis(masks[1],"1", r"OII > $\overline{OII}$")
 #+end_src
 
@@ -161,7 +161,7 @@ vis(masks[1],"1", r"OII > $\overline{OII}$")
 
 *** mask2 = o_data > o_clip.std()
 
-#+begin_src python :results file output
+#+begin_src python :results file link
 vis(masks[2],"2", r"OII >  $\overline{OII}$ + $\sigma$")
 #+end_src
 
@@ -177,7 +177,7 @@ pixel_values = o_data.flatten()
 #+end_src
 
 
-#+begin_src python :results file output
+#+begin_src python :results file link value
 fname = "visualizations/distr.png"
 # Create a histogram
 plt.hist(pixel_values , bins=150, log = True)
@@ -225,7 +225,7 @@ plt.legend()
 
 plt.savefig(fname)
 plt.close()
-print(fname)
+fname
 #+end_src
 
 #+RESULTS:
@@ -245,15 +245,15 @@ n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N
 #+end_src
 
 
-#+begin_src python :results file output
-fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI"),
+#+begin_src python :results file link
+fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI")
 #+end_src
 
 #+RESULTS:
 [[file:visualizations/HI_fill.png]]
 
 
-#+begin_src python :results file output
+#+begin_src python :results file link
 
 fill_vis(n_masked, n_data, n_fill, "NII_fill", "NII")
 #+end_src
