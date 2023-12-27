@@ -231,7 +231,7 @@ print(fname)
 #+RESULTS:
 [[file:visualizations/distr.png]]
 
-
+(maybe it is better to use 3$\sigma$)
 
 
 * Use Maskfill
