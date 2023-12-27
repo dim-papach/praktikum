@@ -2,9 +2,8 @@
 #+property: header-args:python :session pain :results value :exports both
 #+SETUPFILE: /home/dp/org-html-themes/org/theme-readtheorg-local.setup
 
-* Open FITS files
 
-#+begin_src python 
+#+begin_src python :results none
 from astropy.io import fits
 import numpy as np
 from maskfill import maskfill #download from github NOT pip
@@ -13,79 +12,6 @@ from astropy.visualization import astropy_mpl_style
 from astropy.table import Table
 from astropy.stats import sigma_clip
 
-h1 = fits.open('HI_6563s.fits')
-o1 = fits.open('O1_6300s.fits')
-n2 = fits.open('N2_6583s.fits')
-
-h1.info()
-n2.info()
-o1.info()
-#+end_src
-
-#+RESULTS:
-: None
-
-We don't use ~fits.getdata()~ because this way we can use more functions of the astropy library
-
-** Data of FITS
-
-Each FITS file has only one HDU (Header Data Unit), so we can get the data as follows:
-
-#+begin_src python
-h_data = h1[0].data
-n_data = n2[0].data
-o_data = o1[0].data
-
-#+end_src
-
-#+RESULTS:
-: None
-
-** Close the FITS files
-
-#+begin_src python
-h1.close()
-n2.close()
-o1.close()
-
-#+end_src
-
-#+RESULTS:
-: None
-
-* Masking the data
-
-** Masking condition
-
-#+begin_src python
-o_clip = sigma_clip(o_data)
-o_clip.mean(), o_data.mean(), o_data.std(), o_clip.std()
-#+end_src
-
-#+RESULTS:
-| 38.624786872821566 | 444.561991585406 | 4104.227141796538 | 73.21818786426948 |
-
-I use the condition =mask = o_data > o_data.mean()=, because if we use the condition =mask = o_data !=0= we get a lot of noise asswell!
-
-If we wanted an even lower threshold then we could sigma clip the o_data and get that mean
-
-(I think it is way too low so I will keep the o_data)
-
-#+begin_src python
-
-# Mask condition
-masks = [o_data!=0,
-         o_data > o_clip.mean(),
-         o_data > o_data.mean(),
-         o_data >  o_data.mean() + o_data.std()]
-#+end_src
-
-#+RESULTS:
-: None
-
-** Masking the H and N data
-
-#+begin_src python
 
 def masked_hn(mask):
     h_mask = np.ma.masked_where(mask, h_data)
@@ -94,7 +20,7 @@ def masked_hn(mask):
 
 def vis(mask,name, mask_description):
 
-    fname = "visualizations/" + name + ".png"
+    fname = "visualizations/mask_" + name + ".png"
     labels=[r"H$\alpha$ masked", "NII masked"]
 
     plt.style.use(astropy_mpl_style)
@@ -111,15 +37,19 @@ def vis(mask,name, mask_description):
     plt.close()
     return print(fname)
 
-def vis_1(data):
+def vis_1(data, name):
+
+    fname = "visualizations/" + name + ".png"
 
     plt.style.use(astropy_mpl_style)
 
     plt.imshow(data, cmap="viridis", origin='lower')
 
+    plt.title("FITS Visualization of Data {}".format(name))
     plt.colorbar(orientation='vertical',label='Intensity')
-    plt.show()
+    plt.savefig(fname)
     plt.close()
+    return print(fname)
 
 def fill_vis(masked, original, filled, name, mask_description):
 
@@ -143,8 +73,71 @@ def fill_vis(masked, original, filled, name, mask_description):
 
 #+end_src
 
+
+* FITS files
+
+#+begin_src python :results none
+h1 = fits.open('HI_6563s.fits')
+o1 = fits.open('O1_6300s.fits')
+n2 = fits.open('N2_6583s.fits')
+
+h1.info()
+n2.info()
+o1.info()
+
+h_data = h1[0].data
+n_data = n2[0].data
+o_data = o1[0].data
+
+h1.close()
+n2.close()
+o1.close()
+#+end_src
+
+- We don't use ~fits.getdata()~ because this way we can use more functions of the astropy library
+- Each FITS file has only one HDU (Header Data Unit), so we can get the data from the PrimaryHDU:
+
+#+begin_src python :results file output
+vis_1(h_data,"HI")
+#+end_src
+
 #+RESULTS:
-: None
+[[file:visualizations/HI.png]]
+
+
+
+#+begin_src python :results file output
+vis_1(n_data,"NI")
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/NI.png]]
+
+#+begin_src python :results file output
+vis_1(o_data,"OII")
+#+end_src
+
+#+RESULTS:
+[[file:visualizations/OII.png]]
+
+* Masking the data
+
+** Masking condition
+
+I use the condition =mask = o_data > o_data.mean()=, because if we use the condition =mask = o_data !=0= we get a lot of noise asswell!
+
+#+begin_src python :results none
+
+# Mask condition
+masks = [o_data!=0,
+         o_data > o_data.mean(),
+         o_data >  o_data.mean() + o_data.std()]
+#+end_src
+
+
+** Masking the H and N data
+
+
 
 *** mask0 = o_data !=0
 
@@ -153,47 +146,35 @@ vis(masks[0],"0", r"OII $\ne$ 0")
 #+end_src
 
 #+RESULTS:
-[[file:visualizations/0.png]]
+[[file:visualizations/mask_0.png]]
 
 We have a lot of noise in our data
 
-*** mask1 = o_data > o_clip.mean()
+*** mask1 = o_data > o_data.mean()
 #+begin_src python :results file output
-vis(masks[1],"1", r"OII > $\overline{OII_{\mathrm{clipped}}}$")
+vis(masks[1],"1", r"OII > $\overline{OII}$")
 #+end_src
 
 #+RESULTS:
-[[file:visualizations/1.png]]
+[[file:visualizations/mask_1.png]]
 
-It's obvious if we think about it. More later
+*** mask2 = o_data > o_clip.std()
 
-*** mask2 = o_data > o_data.mean()
 #+begin_src python :results file output
-vis(masks[2],"2", r"OII > $\overline{OII}$")
+vis(masks[2],"2", r"OII >  $\overline{OII}$ + $\sigma$")
 #+end_src
 
 #+RESULTS:
-[[file:visualizations/2.png]]
-
-*** mask3 = o_data > o_clip.std()
-
-#+begin_src python :results file output
-vis(masks[3],"3", r"OII >  $\overline{OII}$ + $\sigma$")
-#+end_src
-
-#+RESULTS:
-[[file:visualizations/3.png]]
+[[file:visualizations/mask_2.png]]
 
 ** Pixel distribution (or "Why the \sigma mask is the best")
 
 If we see the pixel distribution we can that we have a lot of "active" pixels in the low magnitudes of the OII. This most likely is the noise of our data and we should ignore it!
 
-#+begin_src python
+#+begin_src python :results none
 pixel_values = o_data.flatten()
 #+end_src
 
-#+RESULTS:
-: None
 
 #+begin_src python :results file output
 fname = "visualizations/distr.png"
@@ -239,22 +220,13 @@ print(fname)
 
 * TODO Use Maskfill
 
-#+begin_src python
-h_masked = masked_hn(masks[3])[0]
-n_masked = masked_hn(masks[3])[1]
-#+end_src
+#+begin_src python :results none
+h_masked = masked_hn(masks[2])[0]
+n_masked = masked_hn(masks[2])[1]
 
-#+RESULTS:
-: None
-
-
-#+begin_src python
 h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True)
 n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True)
 #+end_src
-
-#+RESULTS:
-: None
 
 
 #+begin_src python :results file output
