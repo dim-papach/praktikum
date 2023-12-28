@@ -1,0 +1,34 @@
+For ease of use I have decided to run the code inside of a =vevn= so the =maskfill= package doesn't destroy our PCs (the config files are a piece of art).
+
+--------------
+
+Install =poetry= with =pip=
+
+#+begin_src sh
+pip install poetry
+#+end_src
+
+Clone my git repo
+
+#+begin_src sh
+git clone https://github.com/dim-papach/praktikum.git
+#+end_src
+
+cd into the /mask/ directory
+
+#+begin_src sh
+cd praktikum/mask
+#+end_src
+
+Initialize Poetry
+
+#+begin_src sh
+poetry init
+poetry install #downloads dependencies ONLY inside of the venv from the .toml file
+#+end_src
+
+Run the script
+
+#+begin_src sh
+poetry run python main_mask.py
+#+end_src
