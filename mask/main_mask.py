@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # [[file:mask.org::+begin_src python :results none][No heading:1]]
 from astropy.io import fits
 import numpy as np
@@ -175,8 +176,8 @@ fname
 h_masked = masked_hn(masks[2])[0]
 n_masked = masked_hn(masks[2])[1]
 
-h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True, smooth = False)
-n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True,smooth = False)
+h_fill = maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True, smooth = False)
+n_fill = maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True,smooth = False)
 # Use Maskfill:1 ends here
 
 # [[file:mask.org::*Use Maskfill][Use Maskfill:2]]

@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "mask"
+version = "0.1.0"
+description = "using the maskfill package to remove LIS"
+authors = ["dim-papach <dipapachristopoulos@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11.6"
+numpy = "1.24.4"
+astropy = "5.2.2"
+matplotlib = "3.7.4"
+maskfill = {path = "maskfill"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
