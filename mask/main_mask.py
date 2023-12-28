@@ -1,9 +1,3 @@
-#+title: Mask
-#+property: header-args:python :session main :results value :exports both :tangle main_mask.py
-#+SETUPFILE: /home/dp/org-html-themes/org/theme-readtheorg-local.setup
-
-
-#+begin_src python :results none
 from astropy.io import fits
 import numpy as np
 from maskfill import maskfill #download from github NOT pip
@@ -71,12 +65,6 @@ def fill_vis(masked, original, filled, name, mask_description):
     plt.close()
     return fname
 
-#+end_src
-
-
-* FITS files
-
-#+begin_src python :results none
 h1 = fits.open('HI_6563s.fits')
 o1 = fits.open('O1_6300s.fits')
 n2 = fits.open('N2_6583s.fits')
@@ -92,92 +80,26 @@ o_data = o1[0].data
 h1.close()
 n2.close()
 o1.close()
-#+end_src
 
-- We don't use ~fits.getdata()~ because this way we can use more functions of the astropy library
-- Each FITS file has only one HDU (Header Data Unit), so we can get the data from the PrimaryHDU:
-
-#+begin_src python :results file link
 vis_1(h_data,"HI")
-#+end_src
 
-#+RESULTS:
-[[file:visualizations/HI.png]]
-
-
-
-#+begin_src python :results file link
 vis_1(n_data,"NI")
-#+end_src
 
-#+RESULTS:
-[[file:visualizations/NI.png]]
-
-#+begin_src python :results file link
 vis_1(o_data,"OII")
-#+end_src
-
-#+RESULTS:
-[[file:visualizations/OII.png]]
-
-* Masking the data
-
-** Masking condition
-
-I use the condition =mask = o_data > o_data.mean()=, because if we use the condition =mask = o_data !=0= we get a lot of noise asswell!
-
-#+begin_src python :results none
 
 # Mask condition
 masks = [o_data!=0,
          o_data > o_data.mean(),
          o_data >  o_data.mean() + o_data.std()]
-#+end_src
 
-
-
-** Masking the H and N data
-
-
-
-*** mask0 = o_data !=0
-
-#+begin_src python :results file output
 vis(masks[0],"0", r"OII $\ne$ 0")
-#+end_src
 
-#+RESULTS:
-[[file:]]
-
-We have a lot of noise in our data
-
-*** mask1 = o_data > o_data.mean()
-#+begin_src python :results file link
 vis(masks[1],"1", r"OII > $\overline{OII}$")
-#+end_src
 
-#+RESULTS:
-[[file:visualizations/mask_1.png]]
-
-*** mask2 = o_data > o_clip.std()
-
-#+begin_src python :results file link
 vis(masks[2],"2", r"OII >  $\overline{OII}$ + $\sigma$")
-#+end_src
 
-#+RESULTS:
-[[file:visualizations/mask_2.png]]
-
-** Pixel distribution (or "Why the \sigma mask is the best")
-
-If we see the pixel distribution we can see that we have a lot of "active" pixels in the low magnitudes of the OII. This most likely is the noise of our data and we should ignore it!
-
-#+begin_src python :results none
 pixel_values = o_data.flatten()
-#+end_src
 
-
-#+begin_src python :results drawer file link value
 fname = "visualizations/distr.png"
 # Create a histogram
 plt.hist(pixel_values , bins=150, log = True)
@@ -226,37 +148,13 @@ plt.legend()
 plt.savefig(fname)
 plt.close()
 fname
-#+end_src
 
-#+RESULTS:
-[[file:visualizations/distr.png]]
-
-(maybe it is better to use 3$\sigma$)
-
-
-* Use Maskfill
-
-#+begin_src python :results none
 h_masked = masked_hn(masks[2])[0]
 n_masked = masked_hn(masks[2])[1]
 
 h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True, smooth = False)
 n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True,smooth = False)
-#+end_src
 
-
-#+begin_src python :results file link
 fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI")
-#+end_src
-
-#+RESULTS:
-[[file:visualizations/HI_fill.png]]
-
-
-#+begin_src python :results drawer file link
 
 fill_vis(n_masked, n_data, n_fill, "NII_fill", "NII")
-#+end_src
-
-#+RESULTS:
-[[file:visualizations/NII_fill.png]]
