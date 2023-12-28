@@ -1,15 +1,15 @@
 
 # Table of Contents
 
-1.  [FITS files](#orgf4d1664)
-2.  [Masking the data](#org3aa35a0)
-    1.  [Masking condition](#org88f6c93)
-    2.  [Masking the H and N data](#org2763f96)
-        1.  [mask0 = o<sub>data</sub> !=0](#orgd194474)
-        2.  [mask1 = o<sub>data</sub> > o<sub>data.mean</sub>()](#orgf06ad21)
-        3.  [mask2 = o<sub>data</sub> > o<sub>clip.std</sub>()](#orgd6c1554)
-    3.  [Pixel distribution (or &ldquo;Why the &sigma; mask is the best&rdquo;)](#orgf2a7d58)
-3.  [Use Maskfill](#orgfc7bb75)
+1.  [FITS files](#orga712063)
+2.  [Masking the data](#orgda1062a)
+    1.  [Masking condition](#org0be4b59)
+    2.  [Masking the H and N data](#orgdb4deb7)
+        1.  [mask0 = o<sub>data</sub> !=0](#orge810193)
+        2.  [mask1 = o<sub>data</sub> > o<sub>data.mean</sub>()](#orgdd2c78d)
+        3.  [mask2 = o<sub>data</sub> > o<sub>clip.std</sub>()](#orgf9d2df3)
+    3.  [Pixel distribution (or &ldquo;Why the &sigma; mask is the best&rdquo;)](#org8cda2dd)
+3.  [Use Maskfill](#org5628877)
 
     from astropy.io import fits
     import numpy as np
@@ -42,7 +42,7 @@
         fig.suptitle("FITS Visualization of Masked Data\nMask = {}".format(mask_description))
         plt.savefig(fname)
         plt.close()
-        return print(fname)
+        return fname
     
     def vis_1(data, name):
     
@@ -56,7 +56,7 @@
         plt.colorbar(orientation='vertical',label='Intensity')
         plt.savefig(fname)
         plt.close()
-        return print(fname)
+        return fname
     
     def fill_vis(masked, original, filled, name, mask_description):
     
@@ -76,10 +76,10 @@
         fig.suptitle("FITS Visualization of Masked Data and the Maskfill data of {}".format(mask_description))
         plt.savefig(fname)
         plt.close()
-        return print(fname)
+        return fname
 
 
-<a id="orgf4d1664"></a>
+<a id="orga712063"></a>
 
 # FITS files
 
@@ -115,12 +115,12 @@
 ![img](visualizations/OII.png)
 
 
-<a id="org3aa35a0"></a>
+<a id="orgda1062a"></a>
 
 # Masking the data
 
 
-<a id="org88f6c93"></a>
+<a id="org0be4b59"></a>
 
 ## Masking condition
 
@@ -133,23 +133,23 @@ I use the condition `mask = o_data > o_data.mean()`, because if we use the condi
              o_data >  o_data.mean() + o_data.std()]
 
 
-<a id="org2763f96"></a>
+<a id="orgdb4deb7"></a>
 
 ## Masking the H and N data
 
 
-<a id="orgd194474"></a>
+<a id="orge810193"></a>
 
 ### mask0 = o<sub>data</sub> !=0
 
     vis(masks[0],"0", r"OII $\ne$ 0")
 
-![img](visualizations/mask_0.png)
+<>
 
 We have a lot of noise in our data
 
 
-<a id="orgf06ad21"></a>
+<a id="orgdd2c78d"></a>
 
 ### mask1 = o<sub>data</sub> > o<sub>data.mean</sub>()
 
@@ -158,7 +158,7 @@ We have a lot of noise in our data
 ![img](visualizations/mask_1.png)
 
 
-<a id="orgd6c1554"></a>
+<a id="orgf9d2df3"></a>
 
 ### mask2 = o<sub>data</sub> > o<sub>clip.std</sub>()
 
@@ -167,7 +167,7 @@ We have a lot of noise in our data
 ![img](visualizations/mask_2.png)
 
 
-<a id="orgf2a7d58"></a>
+<a id="org8cda2dd"></a>
 
 ## Pixel distribution (or &ldquo;Why the &sigma; mask is the best&rdquo;)
 
@@ -222,14 +222,14 @@ If we see the pixel distribution we can that we have a lot of &ldquo;active&rdqu
     
     plt.savefig(fname)
     plt.close()
-    print(fname)
+    fname
 
 ![img](visualizations/distr.png)
 
 (maybe it is better to use 3$\sigma$)
 
 
-<a id="orgfc7bb75"></a>
+<a id="org5628877"></a>
 
 # Use Maskfill
 
@@ -239,7 +239,7 @@ If we see the pixel distribution we can that we have a lot of &ldquo;active&rdqu
     h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True)
     n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True)
 
-    fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI"),
+    fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI")
 
 ![img](visualizations/HI_fill.png)
 
