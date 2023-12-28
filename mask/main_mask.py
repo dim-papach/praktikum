@@ -1,3 +1,4 @@
+# [[file:mask.org::+begin_src python :results none][No heading:1]]
 from astropy.io import fits
 import numpy as np
 from maskfill import maskfill #download from github NOT pip
@@ -64,7 +65,9 @@ def fill_vis(masked, original, filled, name, mask_description):
     plt.savefig(fname)
     plt.close()
     return fname
+# No heading:1 ends here
 
+# [[file:mask.org::*FITS files][FITS files:1]]
 h1 = fits.open('HI_6563s.fits')
 o1 = fits.open('O1_6300s.fits')
 n2 = fits.open('N2_6583s.fits')
@@ -80,26 +83,44 @@ o_data = o1[0].data
 h1.close()
 n2.close()
 o1.close()
+# FITS files:1 ends here
 
+# [[file:mask.org::*FITS files][FITS files:2]]
 vis_1(h_data,"HI")
+# FITS files:2 ends here
 
+# [[file:mask.org::*FITS files][FITS files:3]]
 vis_1(n_data,"NI")
+# FITS files:3 ends here
 
+# [[file:mask.org::*FITS files][FITS files:4]]
 vis_1(o_data,"OII")
+# FITS files:4 ends here
 
+# [[file:mask.org::*Masking condition][Masking condition:1]]
 # Mask condition
 masks = [o_data!=0,
          o_data > o_data.mean(),
          o_data >  o_data.mean() + o_data.std()]
+# Masking condition:1 ends here
 
+# [[file:mask.org::*mask0 = o_data !=0][mask0 = o_data !=0:1]]
 vis(masks[0],"0", r"OII $\ne$ 0")
+# mask0 = o_data !=0:1 ends here
 
+# [[file:mask.org::*mask1 = o_data > o_data.mean()][mask1 = o_data > o_data.mean():1]]
 vis(masks[1],"1", r"OII > $\overline{OII}$")
+# mask1 = o_data > o_data.mean():1 ends here
 
+# [[file:mask.org::*mask2 = o_data > o_clip.std()][mask2 = o_data > o_clip.std():1]]
 vis(masks[2],"2", r"OII >  $\overline{OII}$ + $\sigma$")
+# mask2 = o_data > o_clip.std():1 ends here
 
+# [[file:mask.org::*Pixel distribution (or "Why the \sigma mask is the best")][Pixel distribution (or "Why the \sigma mask is the best"):1]]
 pixel_values = o_data.flatten()
+# Pixel distribution (or "Why the \sigma mask is the best"):1 ends here
 
+# [[file:mask.org::*Pixel distribution (or "Why the \sigma mask is the best")][Pixel distribution (or "Why the \sigma mask is the best"):2]]
 fname = "visualizations/distr.png"
 # Create a histogram
 plt.hist(pixel_values , bins=150, log = True)
@@ -148,13 +169,20 @@ plt.legend()
 plt.savefig(fname)
 plt.close()
 fname
+# Pixel distribution (or "Why the \sigma mask is the best"):2 ends here
 
+# [[file:mask.org::*Use Maskfill][Use Maskfill:1]]
 h_masked = masked_hn(masks[2])[0]
 n_masked = masked_hn(masks[2])[1]
 
 h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True, smooth = False)
 n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True,smooth = False)
+# Use Maskfill:1 ends here
 
+# [[file:mask.org::*Use Maskfill][Use Maskfill:2]]
 fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI")
+# Use Maskfill:2 ends here
 
+# [[file:mask.org::*Use Maskfill][Use Maskfill:3]]
 fill_vis(n_masked, n_data, n_fill, "NII_fill", "NII")
+# Use Maskfill:3 ends here

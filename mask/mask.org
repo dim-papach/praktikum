@@ -1,5 +1,5 @@
 #+title: Mask
-#+property: header-args:python :session main :results value :exports both :tangle main_mask.py
+#+property: header-args:python :session main :results value :exports both :tangle main_mask.py :comments link 
 #+SETUPFILE: /home/dp/org-html-themes/org/theme-readtheorg-local.setup
 
 
