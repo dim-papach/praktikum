@@ -6,7 +6,7 @@ authors = ["dim-papach <dipapachristopoulos@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11.6"
+python = "^3.10"
 numpy = "1.24.4"
 astropy = "5.2.2"
 matplotlib = "3.7.4"

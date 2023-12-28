@@ -20,10 +20,9 @@ cd into the /mask/ directory
 cd praktikum/mask
 #+end_src
 
-Initialize Poetry
+Download dependencies
 
 #+begin_src sh
-poetry init
 poetry install #downloads dependencies ONLY inside of the venv from the .toml file
 #+end_src
 
