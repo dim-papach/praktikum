@@ -20,26 +20,17 @@ cd into the /mask/ directory
 cd praktikum/mask
 #+end_src
 
-Download dependencies
+Install and update dependencies and run the code inside of a =vevn=
 
 #+begin_src sh
-poetry update
 poetry install #downloads dependencies ONLY inside of the venv from the .toml file
-#+end_src
-
-Run the script
-
-#+begin_src sh
 poetry run python main_mask.py
 #+end_src
 
-----------------------------------------------------------------
-
-Or run this after you have installed poetry with pip and cloned the repo
+Execute the code
 
 #+begin_src sh
-cd praktikum/mask
 poetry update
-poetry install #downloads dependencies ONLY inside of the venv from the .toml file
+poetry install
 poetry run python main_mask.py
 #+end_src
