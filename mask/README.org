@@ -23,6 +23,7 @@ cd praktikum/mask
 Download dependencies
 
 #+begin_src sh
+poetry update
 poetry install #downloads dependencies ONLY inside of the venv from the .toml file
 #+end_src
 
