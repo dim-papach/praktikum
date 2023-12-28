@@ -32,3 +32,14 @@ Run the script
 #+begin_src sh
 poetry run python main_mask.py
 #+end_src
+
+----------------------------------------------------------------
+
+Or run this after you have installed poetry with pip and cloned the repo
+
+#+begin_src sh
+cd praktikum/mask
+poetry update
+poetry install #downloads dependencies ONLY inside of the venv from the .toml file
+poetry run python main_mask.py
+#+end_src
