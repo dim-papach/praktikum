@@ -1,5 +1,5 @@
 #+title: Mask
-#+property: header-args:python :session main :results value :exports both :tangle main_mask.py :comments link 
+#+property: header-args:python :session main :results value :exports both :tangle main_mask.py :comments link
 #+SETUPFILE: /home/dp/org-html-themes/org/theme-readtheorg-local.setup
 
 
@@ -124,7 +124,7 @@ vis_1(o_data,"OII")
 
 ** Masking condition
 
-I use the condition =mask = o_data > o_data.mean()=, because if we use the condition =mask = o_data !=0= we get a lot of noise asswell!
+I use the condition =mask = o_data > o_data.mean() + $\sigma$=, because if we use the condition =mask = o_data !=0= we get a lot of noise as well!
 
 #+begin_src python :results none
 
@@ -142,12 +142,12 @@ masks = [o_data!=0,
 
 *** mask0 = o_data !=0
 
-#+begin_src python :results file output
+#+begin_src python :results file
 vis(masks[0],"0", r"OII $\ne$ 0")
 #+end_src
 
 #+RESULTS:
-[[file:]]
+[[file:visualizations/mask_0.png]]
 
 We have a lot of noise in our data
 
@@ -158,6 +158,8 @@ vis(masks[1],"1", r"OII > $\overline{OII}$")
 
 #+RESULTS:
 [[file:visualizations/mask_1.png]]
+
+Less noise, we could do better.
 
 *** mask2 = o_data > o_clip.std()
 
@@ -170,7 +172,7 @@ vis(masks[2],"2", r"OII >  $\overline{OII}$ + $\sigma$")
 
 ** Pixel distribution (or "Why the \sigma mask is the best")
 
-If we see the pixel distribution we can see that we have a lot of "active" pixels in the low magnitudes of the OII. This most likely is the noise of our data and we should ignore it!
+If we see the pixel distribution we can see that we have a lot of active pixels in the low magnitudes of the OII. This most likely is the noise of our data and we should ignore it!
 
 #+begin_src python :results none
 pixel_values = o_data.flatten()
@@ -231,7 +233,7 @@ fname
 #+RESULTS:
 [[file:visualizations/distr.png]]
 
-(maybe it is better to use 3$\sigma$)
+***** [?] maybe it is better to use 3$\sigma$
 
 
 * Use Maskfill
@@ -240,8 +242,9 @@ fname
 h_masked = masked_hn(masks[2])[0]
 n_masked = masked_hn(masks[2])[1]
 
-h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True, smooth = False)
-n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True,smooth = False)
+h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True)
+
+n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True)
 #+end_src
 
 
