@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2024-03-12 Tue 16:46 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Compare the different methods</title>
+<meta name="generator" content="Org Mode" />
+<link rel="stylesheet" type="text/css" href="src/readtheorg_theme/css/htmlize.css"/>
+<link rel="stylesheet" type="text/css" href="src/readtheorg_theme/css/readtheorg.css"/>
+<script type="text/javascript" src="src/lib/js/jquery.min.js"></script>
+<script type="text/javascript" src="src/lib/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="src/lib/js/jquery.stickytableheaders.min.js"></script>
+<script type="text/javascript" src="src/readtheorg_theme/js/readtheorg.js"></script>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Compare the different methods</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orgfe903a4">1. Callable function</a></li>
+<li><a href="#orgae60436">2. The files</a>
+<ul>
+<li><a href="#org3ead188">2.1. The astropy data</a></li>
+</ul>
+</li>
+<li><a href="#orge043799">3. Astropy Convolution</a>
+<ul>
+<li><a href="#org6a18eaa">3.1. Astropy Fast Fourier Transform (FFT).</a></li>
+</ul>
+</li>
+<li><a href="#org0c47bf2">4. Python Maskfill</a></li>
+</ul>
+</div>
+</div>
+<p>
+Here I will compare 3 methods of filling missing data of FITS files.
+</p>
+
+<ol class="org-ol">
+<li>Astropy&rsquo;s Convolution</li>
+<li>Python&rsquo;s Maskfill method</li>
+<li>R-INLA</li>
+</ol>
+<div id="outline-container-orgfe903a4" class="outline-2">
+<h2 id="orgfe903a4"><span class="section-number-2">1.</span> Callable function</h2>
+<div class="outline-text-2" id="text-1">
+<div class="org-src-container">
+<pre class="src src-python" id="org8c468ef"><span style="color: #fb4934;">import</span> numpy <span style="color: #fb4934;">as</span> np
+<span style="color: #83a598;">threshold</span> = np.arange(<span style="color: #d3869b; font-weight: bold;">0</span>,<span style="color: #d3869b; font-weight: bold;">50</span>,<span style="color: #d3869b; font-weight: bold;">10</span>)
+<span style="color: #fb4934;">return</span> threshold
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python" id="orgd8e7a76"><span style="color: #fb4934;">import</span> matplotlib.pyplot <span style="color: #fb4934;">as</span> plt
+<span style="color: #fb4934;">import</span> numpy <span style="color: #fb4934;">as</span> np
+<span style="color: #fb4934;">from</span> astropy.io <span style="color: #fb4934;">import</span> fits
+<span style="color: #fb4934;">from</span> astropy.visualization <span style="color: #fb4934;">import</span> astropy_mpl_style
+
+
+<span style="color: #83a598;">fig</span>, <span style="color: #83a598;">axes</span> = plt.subplots(<span style="color: #d3869b; font-weight: bold;">3</span>, <span style="color: #d3869b; font-weight: bold;">5</span>, figsize=(<span style="color: #d3869b; font-weight: bold;">20</span>, <span style="color: #d3869b; font-weight: bold;">12</span>))  <span style="color: #928374;"># </span><span style="color: #928374;">Adjust the number of subplots as needed</span>
+
+<span style="color: #928374;"># </span><span style="color: #928374;">Iterate over different thresholds</span>
+<span style="color: #fb4934;">for</span> idx, i <span style="color: #fb4934;">in</span> <span style="color: #fe8019;">enumerate</span>(threshold):
+    filename = <span style="color: #b8bb26;">"{}/filled_{}.fits"</span>.<span style="color: #fe8019;">format</span>(path,i)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Load the image data</span>
+    img_data_filled = fits.getdata(filename)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Plot the image</span>
+    ax = axes[<span style="color: #d3869b; font-weight: bold;">0</span>,idx]
+    im = ax.imshow(img_data_filled, cmap=<span style="color: #b8bb26;">'viridis'</span>, origin=<span style="color: #b8bb26;">'lower'</span>, vmin=-<span style="color: #d3869b; font-weight: bold;">2.0</span>, vmax=<span style="color: #d3869b; font-weight: bold;">20.0</span>)
+    ax.set_title(<span style="color: #b8bb26;">"Threshold {}"</span>.<span style="color: #fe8019;">format</span>(i))
+    plt.colorbar(im, ax=ax, orientation=<span style="color: #b8bb26;">'vertical'</span>, label=<span style="color: #b8bb26;">'Intensity'</span>)
+<span style="color: #928374;">######### </span><span style="color: #928374;">Iterate over different thresholds for the second row of subplots</span>
+    filename = <span style="color: #b8bb26;">"galactic_center_masked_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Load the image data</span>
+    img_data_masked = fits.getdata(filename)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Plot the image on the second row</span>
+    ax = axes[<span style="color: #d3869b; font-weight: bold;">1</span>, idx]
+    im = ax.imshow(img_data_masked, cmap=<span style="color: #b8bb26;">'viridis'</span>, origin=<span style="color: #b8bb26;">'lower'</span>, vmin=-<span style="color: #d3869b; font-weight: bold;">2.0</span>, vmax=<span style="color: #d3869b; font-weight: bold;">20.0</span>)
+    plt.colorbar(im, ax=ax, orientation=<span style="color: #b8bb26;">'vertical'</span>, label=<span style="color: #b8bb26;">'Intensity'</span>)
+
+<span style="color: #928374;">######### </span><span style="color: #928374;">Iterate over different diffs for the third row of subplots</span>
+    filename = <span style="color: #b8bb26;">"{}/diffs_{}.fits"</span>.<span style="color: #fe8019;">format</span>(path,i)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Load the original image data</span>
+    original = fits.getdata(<span style="color: #b8bb26;">"galactic_center.fits"</span>)
+
+    img_diffs = original - img_data_filled
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Plot the image on the second row</span>
+    ax = axes[<span style="color: #d3869b; font-weight: bold;">2</span>, idx]
+    im = ax.imshow(img_diffs, cmap=<span style="color: #b8bb26;">'viridis'</span>, origin=<span style="color: #b8bb26;">'lower'</span>, vmin=-<span style="color: #d3869b; font-weight: bold;">2.0</span>, vmax=<span style="color: #d3869b; font-weight: bold;">20.0</span>)
+    ax.set_title(<span style="color: #b8bb26;">"Diff = Original - Filled({})"</span>.<span style="color: #fe8019;">format</span>(i))
+    plt.colorbar(im, ax=ax, orientation=<span style="color: #b8bb26;">'vertical'</span>, label=<span style="color: #b8bb26;">'Intensity'</span>)
+<span style="color: #928374;">######### </span><span style="color: #928374;">Save the Diffs</span>
+    hdu = fits.PrimaryHDU(img_diffs)
+
+    hdu.writeto(filename,overwrite = <span style="color: #d3869b;">True</span>)
+
+<span style="color: #928374;"># </span><span style="color: #928374;">Adjust layout and display the figure</span>
+fig.suptitle(<span style="color: #b8bb26;">"{}"</span>.<span style="color: #fe8019;">format</span>(title))
+plt.tight_layout()
+filename = <span style="color: #b8bb26;">"visualizations/{}"</span>.<span style="color: #fe8019;">format</span>(title)
+plt.savefig(filename)
+plt.close()
+
+<span style="color: #fe8019;">print</span>(<span style="color: #b8bb26;">"[[./"</span>+filename+<span style="color: #b8bb26;">".png]]"</span>)
+</pre>
+</div>
+
+
+<div id="org99dc4f3" class="figure">
+<p><img src="./visualizations/name.png" alt="name.png" />
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-orgae60436" class="outline-2">
+<h2 id="orgae60436"><span class="section-number-2">2.</span> The files</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+<div id="outline-container-org3ead188" class="outline-3">
+<h3 id="org3ead188"><span class="section-number-3">2.1.</span> The astropy data</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+I will use the data from data.astropy.org. The reason for this is that we have a dense non homogeneous image and it will be good for testing
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #fb4934;">import</span> matplotlib.pyplot <span style="color: #fb4934;">as</span> plt
+<span style="color: #fb4934;">import</span> numpy <span style="color: #fb4934;">as</span> np
+<span style="color: #fb4934;">from</span> astropy.convolution <span style="color: #fb4934;">import</span> Gaussian2DKernel, convolve
+<span style="color: #fb4934;">from</span> astropy.io <span style="color: #fb4934;">import</span> fits
+<span style="color: #fb4934;">from</span> astropy.utils.data <span style="color: #fb4934;">import</span> get_pkg_data_filename
+<span style="color: #fb4934;">from</span> scipy.ndimage <span style="color: #fb4934;">import</span> convolve <span style="color: #fb4934;">as</span> scipy_convolve
+
+<span style="color: #928374;"># </span><span style="color: #928374;">Load the data from data.astropy.org</span>
+<span style="color: #83a598;">filename</span> = get_pkg_data_filename(<span style="color: #b8bb26;">'galactic_center/gc_msx_e.fits'</span>)
+<span style="color: #83a598;">hdul</span> = fits.<span style="color: #fe8019;">open</span>(filename)
+
+hdul.info()
+<span style="color: #83a598;">data</span> = hdul[<span style="color: #d3869b; font-weight: bold;">0</span>].data
+
+<span style="color: #83a598;">zoom</span> = data[<span style="color: #d3869b; font-weight: bold;">50</span>:<span style="color: #d3869b; font-weight: bold;">90</span>, <span style="color: #d3869b; font-weight: bold;">60</span>:<span style="color: #d3869b; font-weight: bold;">100</span>] * 1e5
+
+
+<span style="color: #83a598;">hdul_1</span> = fits.PrimaryHDU(zoom)
+hdul_1.writeto(<span style="color: #b8bb26;">"galactic_center.fits"</span>,overwrite = <span style="color: #d3869b;">True</span>)
+
+hdul.close()
+</pre>
+</div>
+
+
+<p>
+Scale the file to have reasonable numbers (this is mostly so that colorbars do not have too many digits). Also, we crop it so you can see individual pixels
+</p>
+
+<p>
+Then we can mask it by setting the brightest pixels to NaN
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #fb4934;">for</span> i <span style="color: #fb4934;">in</span> <span style="color: #83a598;">threshold</span>:
+    img = zoom.copy()
+    <span style="color: #fb4934;">if</span> i &gt; <span style="color: #d3869b; font-weight: bold;">0</span>:
+        <span style="color: #83a598;">img</span>[img &gt; i] = np.nan
+    <span style="color: #83a598;">hdu</span> = fits.PrimaryHDU(img)
+    <span style="color: #83a598;">filename</span> = <span style="color: #b8bb26;">"galactic_center_masked_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i)
+    hdu.writeto(filename,overwrite = <span style="color: #d3869b;">True</span>)
+
+
+ig, axes = plt.subplots(<span style="color: #d3869b; font-weight: bold;">1</span>, <span style="color: #fe8019;">len</span>(threshold), figsize=(<span style="color: #d3869b; font-weight: bold;">20</span>, <span style="color: #d3869b; font-weight: bold;">4</span>))  <span style="color: #928374;"># </span><span style="color: #928374;">Adjust the number of subplots as needed</span>
+
+<span style="color: #928374;"># </span><span style="color: #928374;">Iterate over different thresholds</span>
+<span style="color: #fb4934;">for</span> idx, i <span style="color: #fb4934;">in</span> <span style="color: #fe8019;">enumerate</span>(np.arange(<span style="color: #d3869b; font-weight: bold;">0</span>, <span style="color: #d3869b; font-weight: bold;">50</span>, <span style="color: #d3869b; font-weight: bold;">10</span>)):
+    filename = <span style="color: #b8bb26;">"galactic_center_masked_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Load the image data</span>
+    img_data = fits.getdata(filename)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Plot the image</span>
+    ax = axes[idx]
+    im = ax.imshow(img_data, cmap=<span style="color: #b8bb26;">'viridis'</span>, origin=<span style="color: #b8bb26;">'lower'</span>, vmin=-<span style="color: #d3869b; font-weight: bold;">2.0</span>, vmax=<span style="color: #d3869b; font-weight: bold;">20.0</span>)
+    ax.set_title(<span style="color: #b8bb26;">"Threshold {}"</span>.<span style="color: #fe8019;">format</span>(i))
+    plt.colorbar(im, ax=ax, orientation=<span style="color: #b8bb26;">'vertical'</span>, label=<span style="color: #b8bb26;">'Intensity'</span>)
+
+<span style="color: #928374;"># </span><span style="color: #928374;">Adjust layout and display the figure</span>
+plt.tight_layout()
+filename = <span style="color: #b8bb26;">"visualizations/masked_fits"</span>
+plt.savefig(filename)
+plt.close()
+
+filename+<span style="color: #b8bb26;">".png"</span>
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orge043799" class="outline-2">
+<h2 id="orge043799"><span class="section-number-2">3.</span> Astropy Convolution</h2>
+<div class="outline-text-2" id="text-3">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #fb4934;">import</span> numpy <span style="color: #fb4934;">as</span> np
+<span style="color: #fb4934;">import</span> matplotlib.pyplot <span style="color: #fb4934;">as</span> plt
+<span style="color: #fb4934;">from</span> astropy.convolution <span style="color: #fb4934;">import</span> Gaussian2DKernel, convolve
+<span style="color: #fb4934;">from</span> astropy.io <span style="color: #fb4934;">import</span> fits
+<span style="color: #fb4934;">from</span> scipy.ndimage <span style="color: #fb4934;">import</span> convolve <span style="color: #fb4934;">as</span> scipy_convolve
+<span style="color: #fb4934;">import</span> os
+
+<span style="color: #83a598;">mypath</span> = <span style="color: #b8bb26;">"astropy_conv"</span>
+
+<span style="color: #fb4934;">if</span> <span style="color: #fb4934;">not</span> os.path.exists(mypath):
+    os.mkdir(mypath)
+
+</pre>
+</div>
+
+<p>
+We smooth with a Gaussian kernel with x<sub>stddev</sub>=1 (and y<sub>stddev</sub>=1). It is a 9x9 array.
+Astropy&rsquo;s convolution replaces the NaN pixels with a kernel-weighted interpolation from their neighbors
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #fb4934;">for</span> i <span style="color: #fb4934;">in</span> <span style="color: #83a598;">threshold</span>:
+    data = fits.<span style="color: #fe8019;">open</span>(<span style="color: #b8bb26;">"galactic_center_masked_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i))[<span style="color: #d3869b; font-weight: bold;">0</span>].data
+
+    <span style="color: #83a598;">kernel</span> = Gaussian2DKernel(x_stddev=<span style="color: #d3869b; font-weight: bold;">1</span>)
+    astropy_conv = convolve(data, kernel)
+
+    hdu = fits.PrimaryHDU(astropy_conv)
+
+    hdu.writeto(<span style="color: #b8bb26;">"astropy_conv/filled_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i),overwrite = <span style="color: #d3869b;">True</span>)
+</pre>
+</div>
+
+
+
+
+<div id="org735920d" class="figure">
+<p><img src="./visualizations/Astropy's Convolution.png" alt="Astropy's Convolution.png" />
+</p>
+</div>
+</div>
+<div id="outline-container-org6a18eaa" class="outline-3">
+<h3 id="org6a18eaa"><span class="section-number-3">3.1.</span> Astropy Fast Fourier Transform (FFT).</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+This is much more efficient for larger kernels.
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #fb4934;">import</span> numpy <span style="color: #fb4934;">as</span> np
+<span style="color: #fb4934;">import</span> matplotlib.pyplot <span style="color: #fb4934;">as</span> plt
+<span style="color: #fb4934;">from</span> astropy.convolution <span style="color: #fb4934;">import</span> Gaussian2DKernel, convolve_fft
+<span style="color: #fb4934;">from</span> astropy.io <span style="color: #fb4934;">import</span> fits
+<span style="color: #fb4934;">from</span> scipy.ndimage <span style="color: #fb4934;">import</span> convolve <span style="color: #fb4934;">as</span> scipy_convolve
+<span style="color: #fb4934;">import</span> os
+
+<span style="color: #83a598;">mypath</span> = <span style="color: #b8bb26;">"astropy_fft"</span>
+
+<span style="color: #fb4934;">if</span> <span style="color: #fb4934;">not</span> os.path.exists(mypath):
+    os.mkdir(mypath)
+
+<span style="color: #fb4934;">for</span> i <span style="color: #fb4934;">in</span> <span style="color: #83a598;">threshold</span>:
+    data = fits.<span style="color: #fe8019;">open</span>(<span style="color: #b8bb26;">"galactic_center_masked_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i))[<span style="color: #d3869b; font-weight: bold;">0</span>].data
+
+    <span style="color: #83a598;">kernel</span> = Gaussian2DKernel(x_stddev=<span style="color: #d3869b; font-weight: bold;">1</span>)
+    astropy_conv = convolve(data, kernel)
+
+    hdu = fits.PrimaryHDU(astropy_conv)
+
+    hdu.writeto(<span style="color: #b8bb26;">"astropy_fft/filled_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i),overwrite = <span style="color: #d3869b;">True</span>)
+</pre>
+</div>
+
+
+
+
+<div id="org6783f0b" class="figure">
+<p><img src="./visualizations/Astropy's FFT Convolution.png" alt="Astropy's FFT Convolution.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org0c47bf2" class="outline-2">
+<h2 id="org0c47bf2"><span class="section-number-2">4.</span> Python Maskfill</h2>
+<div class="outline-text-2" id="text-4">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #fb4934;">from</span> astropy.io <span style="color: #fb4934;">import</span> fits
+<span style="color: #fb4934;">import</span> numpy <span style="color: #fb4934;">as</span> np
+<span style="color: #fb4934;">from</span> maskfill <span style="color: #fb4934;">import</span> maskfill <span style="color: #928374;">#</span><span style="color: #928374;">download from github NOT pip</span>
+<span style="color: #fb4934;">import</span> matplotlib.pyplot <span style="color: #fb4934;">as</span> plt
+<span style="color: #fb4934;">from</span> astropy.visualization <span style="color: #fb4934;">import</span> astropy_mpl_style
+
+<span style="color: #fb4934;">for</span> i <span style="color: #fb4934;">in</span> <span style="color: #83a598;">x</span>:
+    hdul = fits.<span style="color: #fe8019;">open</span>(<span style="color: #b8bb26;">"galactic_center_masked_{}.fits"</span>.<span style="color: #fe8019;">format</span>(i))
+    <span style="color: #928374;"># </span><span style="color: #928374;">Get the data from the FITS file</span>
+    <span style="color: #83a598;">data</span> = hdul[<span style="color: #d3869b; font-weight: bold;">0</span>].data
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Create a masked array from the data, masking NaN values</span>
+    <span style="color: #83a598;">masked_data</span> = np.ma.masked_invalid(data)
+
+    <span style="color: #928374;"># </span><span style="color: #928374;">Access the mask array</span>
+    <span style="color: #83a598;">mask_array</span> = masked_data.mask
+
+    maskfill.maskfill(data, mask_array,writesteps=<span style="color: #d3869b;">False</span>,output_file=<span style="color: #b8bb26;">'maskfilled/filled_{}.fits'</span>.<span style="color: #fe8019;">format</span>(i),verbose=<span style="color: #d3869b;">True</span>)
+
+</pre>
+</div>
+
+
+
+<div id="org772b1b6" class="figure">
+<p><img src="./visualizations/Maskfill.png" alt="Maskfill.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Created: 2024-03-12 Tue 16:46</p>
+</div>
+</body>
+</html>

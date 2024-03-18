@@ -1,0 +1,176 @@
+#+title: Ml
+#+property: header-args:python :session main :results value :exports both :tangle main_ml.py :comments link
+#+SETUPFILE: /home/dp/org-html-themes/org/theme-readtheorg-local.setup
+
+#+begin_src python :results none
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as matplot
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+import statsmodels.api as sm
+from sklearn.metrics import confusion_matrix
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+
+#+end_src
+
+* Load the Data
+
+#+begin_src python :results output
+high = pd.read_csv("samples/shock_high.txt", sep = "\s+")
+low = pd.read_csv("samples/shock_low.txt", sep = "\s+")
+uv = pd.read_csv("samples/UV.txt", sep = "\s+")
+
+high.to_csv("samples/shock_high.csv", index = None)
+low.to_csv("samples/shock_low.csv", index = None)
+uv.to_csv("samples/UV.csv", index = None)
+
+high.info(), low.info(), uv.info()
+#+end_src
+
+#+RESULTS:
+#+begin_example
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 3986 entries, 0 to 3985
+Data columns (total 10 columns):
+ #   Column   Non-Null Count  Dtype
+---  ------   --------------  -----
+ 0   OIIIHb   3986 non-null   float64
+ 1   SIIHa    3986 non-null   float64
+ 2   OIHa     3986 non-null   float64
+ 3   NIIHa    3986 non-null   float64
+ 4   OIOIII   3986 non-null   float64
+ 5   NIISII   3986 non-null   float64
+ 6   SIISIII  3986 non-null   float64
+ 7   NIIOI    3986 non-null   float64
+ 8   SIIOI    3986 non-null   float64
+ 9   label    3986 non-null   int64
+dtypes: float64(9), int64(1)
+memory usage: 311.5 KB
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 42392 entries, 0 to 42391
+Data columns (total 10 columns):
+ #   Column   Non-Null Count  Dtype
+---  ------   --------------  -----
+ 0   OIIIHb   42392 non-null  float64
+ 1   SIIHa    42392 non-null  float64
+ 2   OIHa     42392 non-null  float64
+ 3   NIIHa    42392 non-null  float64
+ 4   OIOIII   42392 non-null  float64
+ 5   NIISII   42392 non-null  float64
+ 6   SIISIII  42392 non-null  float64
+ 7   NIIOI    42392 non-null  float64
+ 8   SIIOI    42392 non-null  float64
+ 9   label    42392 non-null  int64
+dtypes: float64(9), int64(1)
+memory usage: 3.2 MB
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 14151 entries, 0 to 14150
+Data columns (total 10 columns):
+ #   Column   Non-Null Count  Dtype
+---  ------   --------------  -----
+ 0   OIIIHb   14151 non-null  float64
+ 1   SIIHa    14151 non-null  float64
+ 2   OIHa     14151 non-null  float64
+ 3   NIIHa    14151 non-null  float64
+ 4   OIOIII   14151 non-null  float64
+ 5   NIISII   14151 non-null  float64
+ 6   SIISIII  14151 non-null  float64
+ 7   NIIOI    14151 non-null  float64
+ 8   SIIOI    14151 non-null  float64
+ 9   label    14151 non-null  int64
+dtypes: float64(9), int64(1)
+memory usage: 1.1 MB
+#+end_example
+
+* Merge the data
+
+We need to combine the lists into a single dataset and shuffle them, to insure a random order of the datapoints. We will make 3 lists, because we will use a binary classifier system.
+
+#+begin_src python :results none
+def merging(df, dt):
+    merged = pd.concat([df, dt], ignore_index=True)
+    merged = merged.sample(frac=1).reset_index(drop=True)
+    return merged
+#+end_src
+
+** Shock low vs uv
+
+#+begin_src python
+low_vs_uv = merging(low, uv)
+low_vs_uv.describe()
+#+end_src
+
+#+RESULTS:
+:              OIIIHb         SIIHa          OIHa         NIIHa        OIOIII        NIISII       SIISIII         NIIOI         SIIOI         label
+: count  56543.000000  56543.000000  56543.000000  56543.000000  56543.000000  56543.000000  56543.000000  56543.000000  56543.000000  56543.000000
+: mean      -0.982743     -0.883629     -1.185105     -0.091763      0.284942      0.791866     -7.154733      1.093343      0.301477      1.499461
+: std        1.806941      0.551884      0.877745      0.374175      2.310067      0.326110     15.872608      0.702539      0.759807      0.866344
+: min       -4.999957     -3.140775     -4.571181     -1.699184     -5.358446      0.061196    -35.984585     -0.264998     -1.116744      0.000000
+: 25%       -2.611908     -1.240744     -1.245540     -0.296610     -1.013125      0.559375    -32.644783      0.670108     -0.264093      0.000000
+: 50%       -0.268556     -0.749637     -0.987044      0.009453     -0.020151      0.772958      1.620351      1.040708      0.442009      2.000000
+: 75%        0.390078     -0.401309     -0.613166      0.185533      2.223634      1.014720      2.000325      1.335270      0.807657      2.000000
+: max        1.462576      0.470599      0.412247      1.036795      5.098261      2.218590      5.286430      4.025850      2.910344      2.000000
+
+** Shock high vs uv
+
+#+begin_src python
+
+high_vs_uv = merging(high,uv)
+
+high_vs_uv.describe()
+#+end_src
+
+#+RESULTS:
+:              OIIIHb         SIIHa          OIHa         NIIHa        OIOIII        NIISII       SIISIII         NIIOI         SIIOI         label
+: count  18137.000000  18137.000000  18137.000000  18137.000000  18137.000000  18137.000000  18137.000000  18137.000000  18137.000000  18137.000000
+: mean       0.683638     -1.102277     -1.830190     -0.279325     -2.061452      0.822952    -26.599896      1.550864      0.727913      0.219772
+: std        0.603085      0.775901      1.311468      0.520741      1.610629      0.491266     15.048543      0.969885      0.782339      0.414103
+: min       -4.291384     -3.140775     -4.571181     -1.699184     -5.358446     -1.023016    -35.984585     -1.622808     -1.354158      0.000000
+: 25%        0.480912     -1.651020     -3.013698     -0.647405     -3.401981      0.610589    -34.930137      0.987980      0.176281      0.000000
+: 50%        0.904121     -1.110946     -1.650451     -0.241519     -2.069381      0.818273    -34.432888      1.486604      0.722208      0.000000
+: 75%        1.053329     -0.498395     -0.770566      0.111913     -0.973817      1.150241    -33.332744      2.309011      1.307635      0.000000
+: max        1.462576      0.514104      0.488579      1.036795      3.786039      2.218590      2.782355      4.025850      2.910344      1.000000
+
+** Shocks
+
+#+begin_src python
+shocks = merging(high, low)
+shocks.describe()
+#+end_src
+
+#+RESULTS:
+:              OIIIHb         SIIHa          OIHa         NIIHa        OIOIII        NIISII       SIISIII         NIIOI         SIIOI         label
+: count  46378.000000  46378.000000  46378.000000  46378.000000  46378.000000  46378.000000  46378.000000  46378.000000  46378.000000  46378.000000
+: mean      -1.432531     -0.671990     -0.766502     -0.004228      1.166009      0.667762      1.977304      0.762274      0.094512      1.914054
+: std        1.681606      0.425872      0.367395      0.275121      1.633367      0.339856      0.973085      0.465516      0.637438      0.280287
+: min       -4.999957     -1.895053     -2.085606     -1.531020     -2.434668     -1.023016      0.520668     -1.622808     -1.354158      1.000000
+: 25%       -2.830796     -0.973144     -1.074642     -0.195989     -0.253435      0.476827      1.385668      0.466763     -0.330521      2.000000
+: 50%       -1.033539     -0.614035     -0.790998      0.085438      0.811148      0.648606      1.732910      0.851947      0.275886      2.000000
+: 75%        0.215684     -0.342279     -0.494237      0.212991      2.461819      0.964336      2.309991      1.149980      0.671418      2.000000
+: max        1.385553      0.514104      0.488579      0.532756      5.098261      1.243708      5.286430      1.812829      1.593957      2.000000
+
+** Shocks vs uv
+
+#+begin_src python
+shocks2 = shocks.copy().assign(label = 4) #assign new label for all shocks
+
+shocks_vs_uv = merging(shocks2,uv)
+
+shocks_vs_uv.describe()
+#+end_src
+
+#+RESULTS:
+:              OIIIHb         SIIHa          OIHa         NIIHa        OIOIII        NIISII       SIISIII         NIIOI         SIIOI         label
+: count  60529.000000  60529.000000  60529.000000  60529.000000  60529.000000  60529.000000  60529.000000  60529.000000  60529.000000  60529.000000
+: mean      -0.905401     -0.835307     -1.121383     -0.086328      0.270945      0.748978     -6.569487      1.035055      0.286076      3.064845
+: std        1.774936      0.569141      0.891433      0.378409      2.241713      0.366448     15.499064      0.724177      0.748614      1.692972
+: min       -4.999957     -3.140775     -4.571181     -1.699184     -5.358446     -1.023016    -35.984585     -1.622808     -1.354158      0.000000
+: 25%       -2.527682     -1.206692     -1.216825     -0.295219     -0.988492      0.520380      0.646422      0.585563     -0.260820      4.000000
+: 50%       -0.147465     -0.711793     -0.969458      0.014873     -0.003879      0.737024      1.626485      1.005649      0.417959      4.000000
+: 75%        0.393540     -0.371404     -0.557482      0.193895      2.132506      1.002256      2.013109      1.323784      0.804051      4.000000
+: max        1.462576      0.514104      0.488579      1.036795      5.098261      2.218590      5.286430      4.025850      2.910344      4.000000
+
+We will train each model individually
+
+* Shock low vs UV

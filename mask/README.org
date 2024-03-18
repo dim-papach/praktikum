@@ -34,3 +34,10 @@ poetry update
 poetry install
 poetry run python main_mask.py
 #+end_src
+
+Update repository
+
+#+begin_src sh
+cd praktikum/mask
+git pull
+#+end_src

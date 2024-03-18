@@ -12,11 +12,11 @@ from astropy.visualization import astropy_mpl_style
 from astropy.table import Table
 from astropy.stats import sigma_clip
 
-
 def masked_hn(mask):
     h_mask = np.ma.masked_where(mask, h_data)
     n_mask = np.ma.masked_where(mask, n_data)
     return h_mask, n_mask
+
 
 def vis(mask,name, mask_description):
 
@@ -131,7 +131,7 @@ I use the condition =mask = o_data > o_data.mean() + $\sigma$=, because if we us
 # Mask condition
 masks = [o_data!=0,
          o_data > o_data.mean(),
-         o_data >  o_data.mean() + o_data.std()]
+         o_data >  o_data.mean() + 3 * o_data.std()]
 #+end_src
 
 
@@ -143,7 +143,7 @@ masks = [o_data!=0,
 *** mask0 = o_data !=0
 
 #+begin_src python :results file
-vis(masks[0],"0", r"OII $\ne$ 0")
+vis(masks[0],"0", r"OI $\ne$ 0")
 #+end_src
 
 #+RESULTS:
@@ -153,7 +153,7 @@ We have a lot of noise in our data
 
 *** mask1 = o_data > o_data.mean()
 #+begin_src python :results file link
-vis(masks[1],"1", r"OII > $\overline{OII}$")
+vis(masks[1],"1", r"OI > $\overline{OI}$")
 #+end_src
 
 #+RESULTS:
@@ -164,7 +164,7 @@ Less noise, we could do better.
 *** mask2 = o_data > o_clip.std()
 
 #+begin_src python :results file link
-vis(masks[2],"2", r"OII >  $\overline{OII}$ + $\sigma$")
+vis(masks[2],"2", r"OI >  $\overline{OI}$ + $\sigma$")
 #+end_src
 
 #+RESULTS:
@@ -172,7 +172,7 @@ vis(masks[2],"2", r"OII >  $\overline{OII}$ + $\sigma$")
 
 ** Pixel distribution (or "Why the \sigma mask is the best")
 
-If we see the pixel distribution we can see that we have a lot of active pixels in the low magnitudes of the OII. This most likely is the noise of our data and we should ignore it!
+If we see the pixel distribution we can see that we have a lot of active pixels in the low magnitudes of the OI. This most likely is the noise of our data and we should ignore it!
 
 #+begin_src python :results none
 pixel_values = o_data.flatten()
@@ -184,7 +184,7 @@ fname = "visualizations/distr.png"
 # Create a histogram
 plt.hist(pixel_values , bins=150, log = True)
 
-plt.title('Pixel Distribution in OII FITS File')
+plt.title('Pixel Distribution in OI FITS File')
 plt.xlabel('Pixel Value')
 plt.ylabel('Frequency')
 
@@ -199,13 +199,13 @@ plt.axvline(o_data.mean(),
             color='red',
             linestyle='dashed',
             linewidth=2,
-            label= r'$\overline{OII}$'+'= {:.2f}'.format(o_data.mean()) )
+            label= r'$\overline{OI}$'+'= {:.2f}'.format(o_data.mean()) )
 
 plt.axvline(o_data.mean() + o_data.std(),
             color='green',
             linestyle='dashed',
             linewidth=2,
-            label=r'$\overline{OII}$+ 1 $\sigma$ ='+'{:.2f} '.format(o_data.mean() + o_data.std()))
+            label=r'$\overline{OI}$+ 1 $\sigma$ ='+'{:.2f} '.format(o_data.mean() + o_data.std()))
 
 plt.fill_betweenx(y=[0, plt.gca().get_ylim()[1]],
                   x1 =0, x2 = o_data.mean() + o_data.std(),
@@ -215,7 +215,7 @@ plt.axvline(o_data.mean() + 3* o_data.std(),
             color='pink',
             linestyle='dashed',
             linewidth=2,
-            label=r'$\overline{OII}$+ 3 $\sigma$ ='+'{:.2f} '.format(o_data.mean() + 3* o_data.std()))
+            label=r'$\overline{OI}$+ 3 $\sigma$ ='+'{:.2f} '.format(o_data.mean() + 3* o_data.std()))
 
 plt.fill_betweenx(y=[0, plt.gca().get_ylim()[1]],
                   x1 =o_data.mean() + o_data.std(), x2 = o_data.mean() + 3* o_data.std(),
@@ -239,12 +239,13 @@ fname
 * Use Maskfill
 
 #+begin_src python :results none
-h_masked = masked_hn(masks[2])[0]
-n_masked = masked_hn(masks[2])[1]
+mask = masks[2]
+h_masked = np.ma.masked_where(mask, h_data)
+n_masked = np.ma.masked_where(mask, n_data)
 
 h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True)
 
-n_fill = maskfill.maskfill(n_data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True)
+n_fill = maskfill.maskfill(n_masked.data, n_masked.mask,writesteps=False,output_file='N_fill.fits',verbose=True)
 #+end_src
 
 
@@ -258,7 +259,7 @@ fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI")
 
 #+begin_src python :results drawer file link
 
-fill_vis(n_masked, n_data, n_fill, "NII_fill", "NII")
+fill_vis(n_masked, n_masked.data, n_fill, "NII_fill", "NII")
 #+end_src
 
 #+RESULTS:

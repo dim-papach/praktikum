@@ -1,0 +1,8 @@
+
+ fitsdiff: 5.2.2
+ a: galactic_center.fits
+ b: galactic_center_masked_0.fits
+ Maximum number of different data values to be reported: 10
+ Relative tolerance: 0.0, Absolute tolerance: 0.0
+
+No differences found.
