@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "compare"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = ""
+
+[tool.poetry.dependencies]
+python = "^3.11"
+maskfill = {git = "https://github.com/dokkum/maskfill.git"}
+astropy = "^6.0.0"
+numpy = "^1.26.4"
+matplotlib = "^3.8.3"
+package-name = "^0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
