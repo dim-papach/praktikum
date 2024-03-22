@@ -1,5 +1,4 @@
 #+title: Compare the different methods
-#+SETUPFILE: /home/dp/org-html-themes/org/theme-readtheorg-local.setup
 
 Here I will compare 3 methods of filling missing data of FITS files.
 
