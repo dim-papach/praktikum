@@ -1,22 +1,19 @@
----
-title: "trying"
----
-
-# Library Loading
-
 ```{r}
+# Library Loading
 library(INLA)
 library(IDPmisc)
 require(rasterVis)
 library(viridis)
 library(latex2exp)
-library(fields) #;library(imager);
-library(lattice);require(latticeExtra) #;require(INLAutils)
-require(classInt);require(reshape2)
+library(fields)
+library(lattice)
+require(latticeExtra)
+require(classInt)
+require(reshape2)
 library(FITSio)
 library(rmarkdown)
-
 ```
+
 
 ## Starry night or how to set a new color pallet
 

@@ -1,10 +1,13 @@
 ---
 title: "trying"
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
 # Library Loading
 
-```{r}
+```{r message=FALSE}
 library(INLA)
 library(IDPmisc)
 require(rasterVis)

@@ -3,14 +3,16 @@ name = "mask"
 version = "0.1.0"
 description = "using the maskfill package to remove LIS"
 authors = ["dim-papach <dipapachristopoulos@gmail.com>"]
-readme = "README.md"
+readme = "README.org"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-maskfill = {path = "maskfill"}
+maskfill = {git = "https://github.com/dokkum/maskfill.git"}
 matplotlib = "^3.8.2"
+scikit-image = "^0.22.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+package-mode = false

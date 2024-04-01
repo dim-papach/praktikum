@@ -1,6 +1,3 @@
----
-title: "trying"
----
 
 # Library Loading
 

@@ -36,7 +36,7 @@ for idx, i in enumerate(threshold):
     img_data_filled = fits.getdata(filename)
 
     # Plot the image
-    ax = axes[0,idx]
+    ax = axes[1,idx]
     im = ax.imshow(img_data_filled, cmap='viridis', origin='lower', vmin=-2.0, vmax=20.0)
     ax.set_title("Threshold {}".format(i))
     plt.colorbar(im, ax=ax, orientation='vertical', label='Intensity')
@@ -47,7 +47,7 @@ for idx, i in enumerate(threshold):
     img_data_masked = fits.getdata(filename)
 
     # Plot the image on the second row
-    ax = axes[1, idx]
+    ax = axes[0, idx]
     im = ax.imshow(img_data_masked, cmap='viridis', origin='lower', vmin=-2.0, vmax=20.0)
     plt.colorbar(im, ax=ax, orientation='vertical', label='Intensity')
 
@@ -57,12 +57,12 @@ for idx, i in enumerate(threshold):
     # Load the original image data
     original = fits.getdata("galactic_center.fits")
 
-    img_diffs = original - img_data_filled
+    img_diffs = ((original - img_data_filled)/original)*100
 
     # Plot the image on the second row
     ax = axes[2, idx]
     im = ax.imshow(img_diffs, cmap='viridis', origin='lower', vmin=-2.0, vmax=20.0)
-    ax.set_title("Diff = Original - Filled({})".format(i))
+    ax.set_title("Diff = (Original - Filled({}))/Original %".format(i))
     plt.colorbar(im, ax=ax, orientation='vertical', label='Intensity')
 ######### Save the Diffs
     hdu = fits.PrimaryHDU(img_diffs)
@@ -394,36 +394,80 @@ for i in x:
 
 * R-INLA
 
-#+begin_src R
-# Load necessary packages
-library(INLA)
-library(FITSio)
-# Read fits image
-fits_data <- readFITS("galactic_center.fits")
+#+begin_src python :results none
+import os
 
-# Define spatial mesh
-x <- seq(1, ncol(fits_data))
-y <- seq(1, nrow(fits_data)
+mypath = "r-inla"
 
-mesh <- inla.mesh.2d(x, y, max.n = 10, cutoff = cutoff)
+if not os.path.exists(mypath):
+    os.mkdir(mypath)
 
-# Define model
-formula <- observed_data ~ f(mesh, model = "rw2")
-
-# Define likelihood
-likelihood <- "gaussian"
-
-# Fit the model
-fit <- inla(formula, data = list(observed_data = fits_data),
-            control.predictor = list(compute = TRUE),
-            control.inla = list(strategy = "adaptive"))
-
-# Posterior prediction
-predicted_image <- fitted(fit)
 #+end_src
 
-#+RESULTS:
+#+begin_src R :var threshold=threshold :results output
+# Load necessary packages
+library(INLA)
+library(IDPmisc)
+require(rasterVis)
+library(viridis)
+library(latex2exp)
+library(fields) #;library(imager);
+library(lattice);require(latticeExtra) #;require(INLAutils)
+require(classInt);require(reshape2)
+library(FITSio)
+library(magrittr) # for %>% pipe operator
 
+# Define threshold matrix from Python
+thres <- threshold
+source(paste("./inla_fct.R",sep=''))
+
+# Read fits image
+fits <- readFITS("galactic_center.fits")
+img <- fits$imDat[,]
+dims <- dim(img)
+#dims <- dim(img)
+cutoff = 0.9
+# Access data from the first HDU
+num_rows_thres <- 1:nrow(thres)
+
+print(num_rows_thres)  # Check the values of num_rows_thres
+
+# Iterate over the rows of the thres matrix
+for (j in num_rows_thres) {
+  i = thres[j,1]
+        filename <- sprintf("galactic_center_masked_%d", i)
+        fits_file <- readFITS(file=paste(filename,"fits",sep='.'))
+        img <- fits$imDat[,]
+        dims <- dim(img)
+        # Create x and y arrays using matrix indexing
+        x <- matrix(rep(1:dims[1], dims[2]), nrow = dims[1], ncol = dims[2])
+        y <- matrix(rep(1:dims[2], each = dims[1]), nrow = dims[1], ncol = dims[2])
+
+        valid <- which(!(is.na(img)))
+
+        xsize <- dims[2]
+        ysize <- dims[1]
+        xfin <- xsize
+        yfin <- ysize
+        logimg = log10(img)
+
+      #  imginla <- stationary_inla(x[valid],y[valid],logimg[valid], zoom = 1,
+       #                         xsize=xsize,shape='none',xfin=xfin,
+        #                        yfin=yfin,ysize=ysize,cutoff=cutoff,
+         #                       tolerance=1e-6,restart=0)
+  imginla <- nonparametric_inla(x,y,logimg, xsize = xsize, ysize = ysize, tepar = "NaN", weight = 1)
+        writeFITSim(imginla$outsd,file=sprintf("r-inla/filled_%d.fits",i))
+}
+
+#+end_src
+
+
+#+call: vis[:var filename = "./r-inla/filled_30.fits"]
+
+#+RESULTS:
+:results:
+[[./visualizations/name.png]]
+:end:
 
 * Comparisons
 
