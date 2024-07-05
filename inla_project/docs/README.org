@@ -1,0 +1,34 @@
+#+bibliography:../bibliography.bib
+
+This project is based on the work of [cite:@gonzalez-gaitanSpatialFieldReconstruction2019] and [cite:@smoleSpatialFieldReconstruction2023].
+
+It uses the R-INLA package to fill missing values in FITS images of astrophysical objects. Our main focus is to test the accuracy and efficiency of this method.
+
+To make sure you don't have a dependency problem, follow the instructions
+
+* Quick installation
+- Make sure you have =Nix= installed
+- Clone the repository
+#+begin_example sh
+git clone # clone the repository
+
+cd # move into the directory
+#+end_example
+
+- Build the Nix environment
+#+begin_example sh
+nix-build
+#+end_example
+
+- Initiate and use the environment
+
+#+begin_example sh
+nix-shell
+#+end_example
+
+This opens a bash shell in you current directory and you can run your scripts
+
+
+* Quick Guides
+- [[./guides/git.org][Git]]
+- [[./guides/nix.org][Nix]]
