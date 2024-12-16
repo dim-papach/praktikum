@@ -114,8 +114,9 @@ if(shape == 'radius'){
 #ellipse fct
 }
 else if(shape=='ellipse') {
-
-    covar <- cov.wt(cbind(x,y), w=weight)
+m_weights <- rep(weight, nrow(cbind(x, y)))
+covar <- cov.wt(cbind(x,y), w=m_weights)
+  
     eigens <- eigen(covar$cov)
     ellipse <- (cbind(x-xcenter,y-ycenter)%*%(eigens$vectors[,1]))^2/eigens$values[1] +
         (cbind(x-xcenter,y-ycenter)%*%(eigens$vectors[,2]))^2/eigens$values[2]

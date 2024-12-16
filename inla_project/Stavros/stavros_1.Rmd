@@ -120,6 +120,11 @@ logimg[is.nan(logimg[valid])] <- 0
 ```
 
 ```{r}
+imginla <- nonparametric_inla(x[valid],y[valid], logimg[valid] ,xsize=xsize,ysize=ysize)
+```
+
+
+```{r}
 
 ## PLOT
 fj5_img <- classIntervals(c(logimg[valid],imginla$out[valid]), n = cutColor, style= "fisher")

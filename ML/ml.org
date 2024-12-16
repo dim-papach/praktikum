@@ -99,6 +99,15 @@ def merging(df, dt):
 #+begin_src python
 low_vs_uv = merging(low, uv)
 low_vs_uv.describe()
+#save the low_vs_uv data in a csv file
+low_vs_uv.to_csv("samples/low_vs_uv.csv", index = None)
+#+end_src
+
+#+RESULTS:
+: None
+
+** Shock high vs uv
+
 #+end_src
 
 #+RESULTS:

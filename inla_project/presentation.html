@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Different methods of reconstructing FITS images with missing data</title>
+<meta name="author" content="dp"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/moon.css" id="theme"/>
+
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'https://cdn.jsdelivr.net/npm/reveal.js/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Different methods of reconstructing FITS images with missing data</h1><p class="subtitle"></p>
+<h2 class="author">dp</h2><p class="date">Created: 2024-05-13 Mon 03:57</p>
+</section>
+<section id="sec-table-of-contents"><div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#/slide-org9514439">1. Εισαγωγή</a>
+<ul>
+<li><a href="#/slide-orgec727ec">1.1. Γιατί;</a></li>
+<li><a href="#/slide-org7ee44b6">1.2. Σκοπός</a>
+<ul>
+<li><a href="#/slide-org103682b">1.2.1. Απλή μέση τιμή (Maskfill)</a></li>
+<li><a href="#/slide-orgbebb735">1.2.2. Astropy Convolution</a></li>
+<li><a href="#/slide-orgea26822">1.2.3. Integrated Nested Laplace Approximations (INLA)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#/slide-org6664f86">2. Κριτήρια Αξιολόγησης</a></li>
+<li><a href="#/slide-orge4ecdb8">3. Προβλήματα που αντιμετώπισα</a>
+<ul>
+<li><a href="#/slide-org6473a2b">3.1. ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ ΚΑΙ ΑΓΑΠΗΜΕΝΑ VERSIONS</a>
+<ul>
+<li><a href="#/slide-orge49eb19">3.1.1. &ldquo;Σε μένα δουλεύει&rdquo;</a></li>
+</ul>
+</li>
+<li><a href="#/slide-orgc5db717">3.2. Λύση</a></li>
+</ul>
+</li>
+<li><a href="#/slide-org907dfc3">4. Αποτελέσματα</a>
+<ul>
+<li><a href="#/slide-org56701cb">4.1. Maskfill</a></li>
+<li><a href="#/slide-org0e9bf67">4.2. Gausian Convolution</a></li>
+<li><a href="#/slide-org273bc1c">4.3. FFT Convolution</a></li>
+<li><a href="#/slide-org71cab2f">4.4. INLA</a></li>
+</ul>
+</li>
+<li><a href="#/slide-org486d623">5. Τελικός σκοπός</a></li>
+</ul>
+</div>
+</div>
+</section>
+
+<section>
+<section id="slide-org9514439">
+<h2 id="org9514439"><span class="section-number-2">1.</span> Εισαγωγή</h2>
+<ul>
+<li>Να πάρω εικόνες</li>
+<li>Να κρύψω περιοχές τους</li>
+<li>Να τις ξαναγεμίσω</li>
+
+</ul>
+
+</section>
+<section id="slide-org9514439-split">
+
+<div id="org4b2c9ca" class="figure">
+<p><img src="./compare/visualizations/Original.png" alt="Original.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org9514439-split">
+
+<div id="org647bc82" class="figure">
+<p><img src="./compare/visualizations/Masked&gt;10.png" alt="Masked&gt;10.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-orgec727ec">
+<h3 id="orgec727ec"><span class="section-number-3">1.1.</span> Γιατί;</h3>
+<ul>
+<li>Πολλές φορές οι εικόνες από τις παρατηρήσεις μας έχουν &ldquo;κενά&rdquo;
+<ul>
+<li>(π.χ. καμένα pixel)</li>
+
+</ul></li>
+<li>Θέλουμε να αφαιρέσουμε περιοχές και ελλατώματα της εικόνας για να έχουμε καλύτερες μετρήσεις
+<ul>
+<li>(π.χ. κοσμικές ακτίνες, LIS πίσω από νεφελώματα, &#x2026;)</li>
+
+</ul></li>
+<li>Αφαίρεση θορύβου</li>
+
+</ul>
+
+</section>
+<section id="slide-org7ee44b6">
+<h3 id="org7ee44b6"><span class="section-number-3">1.2.</span> Σκοπός</h3>
+<p>
+Να συγκρίνω 3 διαφορετικές μεθόδους/εργαλεία που γεμίζουν τα κενά
+</p>
+
+</section>
+<section id="slide-org103682b">
+<h4 id="org103682b"><span class="section-number-4">1.2.1.</span> Απλή μέση τιμή (Maskfill)</h4>
+</section>
+<section id="slide-orgbebb735">
+<h4 id="orgbebb735"><span class="section-number-4">1.2.2.</span> Astropy Convolution</h4>
+<p>
+Η συνέλιξη είναι μια μαθηματική διαδικασία μεταξύ δύο συναρτήσεων που περιγράφει πώς το σχήμα της μίας τροποποιείται από την άλλη. Το αποτέλεσμα αυτής της διαδικασίας είναι το ολοκλήρωμα του γινομένου των δύο συναρτήσεων, μετά την αναδίπλωση και ολίσθηση της μίας συνάρτησης κατά μήκος της άλλης.
+   \[(f * g)(x) = \sum_{k=-\infty}^{+\infty} f(k) \cdot g(x-k), \quad \forall \quad x \in Z \]
+</p>
+</section>
+<section id="slide-orgbebb735-split">
+<ul>
+<li>Gaussian Convolution</li>
+<li>Fast Fourier Transform Convolution</li>
+
+</ul>
+</section>
+<section id="slide-orgea26822">
+<h4 id="orgea26822"><span class="section-number-4">1.2.3.</span> Integrated Nested Laplace Approximations (INLA)</h4>
+<ul>
+<li>Είναι μια ευέλικτη υπολογιστική προσέγγιση βασισμένη στην Βαγιεριανή στατιστική.
+\[P(A\vert B) = \frac{P(B \vert A) P(A)}{P(B)}\]</li>
+<li>Ολοκληρώνει αριθμητικά και χρησιμοποιεί την προσέγγιση Laplace για να κάνει fit τα δεδομένα.</li>
+<li>Χρησιμοποιείται για γρήγορη και ακριβή εκτίμηση των κατανομών παραμέτρων μοντέλου, αντικαθιστώντας τις μεθόδους Markov chain Monte Carlo (MCMC)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org6664f86">
+<h2 id="org6664f86"><span class="section-number-2">2.</span> Κριτήρια Αξιολόγησης</h2>
+</section>
+<section id="slide-org6664f86-split">
+<ol>
+<li><p>
+<b><b>Μέσο τετραγωνικό σφάλμα (MSE)</b></b>:
+</p>
+<ul>
+<li>Το μέσο τετραγωνικό σφάλμα υπολογίζει τη μέση τετραγωνική διαφορά μεταξύ της αρχικής και της καλυμμένης εικόνας. Μια χαμηλότερη τιμή MSE υποδηλώνει μεγαλύτερη ομοιότητα μεταξύ των δύο εικόνων.</li>
+
+</ul>
+
+</section>
+<section id="slide-orgce2689d-split">
+<ul>
+<li><p>
+Ο τύπος για το MSE μεταξύ δύο εικόνων Α και Β, κάθε μία με διαστάσεις \(m \times n\), είναι:
+</p>
+
+<p>
+\[
+     MSE = \frac{1}{mn} \sum_{i=0}^{m-1} \sum_{j=0}^{n-1} (A_{ij} - B_{ij})^2
+     \]
+</p></li>
+
+</ul>
+
+</section>
+<section id="slide-orgce2689d-split"></li>
+<li><p>
+<b><b>Δείκτης δομικής ομοιότητας (SSIM)</b></b>:
+</p>
+<ul>
+<li>Ο SSIM είναι μια μετρική  μετρά την ομοιότητα μεταξύ δύο εικόνων. Λαμβάνει υπόψη τη φωτεινότητα, την αντίθεση και τη δομή. Σε αντίθεση με το MSE, ο SSIM λαμβάνει υπόψη τη δομή των εικόνων, καθιστώντας τον πιο κατάλληλο για την αξιολόγηση των αντιληπτικών διαφορών.</li>
+<li>Ο δείκτης SSIM κυμαίνεται από -1 έως 1, όπου το 1 υποδηλώνει τέλεια ομοιότητα. Τυπικά, μια τιμή άνω του 0,9 θεωρείται καλή αντιστοιχία.</li>
+
+</ul>
+
+</section>
+<section id="slide-orgce2689d-split">
+<ul>
+<li><p>
+Ο τύπος του δείκτη SSIM περιλαμβάνει συγκρίσεις μεταξύ των τοπικών γειτονιών των εικόνων. Ο τύπος για το δείκτη SSIM μεταξύ των εικόνων Α και Β είναι:
+</p>
+
+<p>
+\[
+     SSIM(A, B) = \frac{(2 \mu_A \mu_B + C_1)(2 \sigma_{AB} + C_2)}{(\mu_A^2 + \mu_B^2 + C_1)(\sigma_A^2 + \sigma_B^2 + C_2)}
+     \]
+</p></li>
+
+</ul></li>
+
+</ol>
+
+</section>
+</section>
+<section>
+<section id="slide-orge4ecdb8">
+<h2 id="orge4ecdb8"><span class="section-number-2">3.</span> Προβλήματα που αντιμετώπισα</h2>
+<div class="outline-text-2" id="text-3">
+</div>
+</section>
+<section id="slide-org6473a2b">
+<h3 id="org6473a2b"><span class="section-number-3">3.1.</span> ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ ΚΑΙ ΑΓΑΠΗΜΕΝΑ VERSIONS</h3>
+<p>
+Τα εργαλεία που χρησιμοποιώ είναι γραμμένα σε Python και R. Ενώ τα Astropy Convolution έτρεχαν χωρίς κανένα ιδιαίτερο θέμα, τα άλλα δύο είναι γραμμένα από φυσικούς
+</p>
+</section>
+<section id="slide-orge49eb19">
+<h4 id="orge49eb19"><span class="section-number-4">3.1.1.</span> &ldquo;Σε μένα δουλεύει&rdquo;</h4>
+<ul>
+<li>Ή απάντηση του author &ldquo;Spatial field reconstruction with INLA: application to IFU galaxy data&rdquo;. To INLA δουλευε στον υπολογιστή του, σε κανέναν άλλον.</li>
+<li>Το ίδιο πρόβλημα και με το Maskfill</li>
+
+</ul>
+</section>
+<section id="slide-orgc5db717">
+<h3 id="orgc5db717"><span class="section-number-3">3.2.</span> Λύση</h3>
+<ul>
+<li>Είναι αναγκαίο να απομονώσεις όλο σου τον κώδικα και τα προγραμματα που χρησιμοποιείς από το υπόλοιπο υπολογιστή για να μην έχεις θέματα συμβατότητας.</li>
+<li><p>
+Αυτοτελές προγραμματα που δεν εξαρτώνται από τον υπολογιστή σου -&gt; Επαναληψημότητα
+</p>
+
+<p>
+Έμαθα Nix Shell
+</p></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-org907dfc3">
+<h2 id="org907dfc3"><span class="section-number-2">4.</span> Αποτελέσματα</h2>
+<div class="outline-text-2" id="text-4">
+</div>
+</section>
+<section id="slide-org56701cb">
+<h3 id="org56701cb"><span class="section-number-3">4.1.</span> Maskfill</h3>
+
+<div id="org3bc286b" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/compare/visualizations/Maskfill.png" alt="Maskfill.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org56701cb-split">
+
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">&#xa0;</th>
+<th scope="col" class="org-right">Comparison</th>
+<th scope="col" class="org-right">MSE</th>
+<th scope="col" class="org-right">SSIM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-right">1</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-right">10</td>
+<td class="org-right">169.6</td>
+<td class="org-right">0.840653</td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-right">20</td>
+<td class="org-right">150.396</td>
+<td class="org-right">0.885354</td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-right">30</td>
+<td class="org-right">140.01</td>
+<td class="org-right">0.910179</td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-right">40</td>
+<td class="org-right">125.399</td>
+<td class="org-right">0.933453</td>
+</tr>
+</tbody>
+</table>
+
+</section>
+<section id="slide-org0e9bf67">
+<h3 id="org0e9bf67"><span class="section-number-3">4.2.</span> Gausian Convolution</h3>
+
+<div id="org52d6076" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/compare/visualizations/Astropy's Convolution.png" alt="Astropy's Convolution.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org0e9bf67-split">
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">&#xa0;</th>
+<th scope="col" class="org-right">Comparison</th>
+<th scope="col" class="org-right">MSE</th>
+<th scope="col" class="org-right">SSIM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-right">41.3184</td>
+<td class="org-right">0.954215</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-right">10</td>
+<td class="org-right">175.025</td>
+<td class="org-right">0.828449</td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-right">20</td>
+<td class="org-right">156.099</td>
+<td class="org-right">0.867492</td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-right">30</td>
+<td class="org-right">146.611</td>
+<td class="org-right">0.886603</td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-right">40</td>
+<td class="org-right">135.17</td>
+<td class="org-right">0.903326</td>
+</tr>
+</tbody>
+</table>
+
+</section>
+<section id="slide-org273bc1c">
+<h3 id="org273bc1c"><span class="section-number-3">4.3.</span> FFT Convolution</h3>
+
+<div id="org4c763ff" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/compare/visualizations/Astropy's FFT Convolution.png" alt="Astropy's FFT Convolution.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org273bc1c-split">
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">&#xa0;</th>
+<th scope="col" class="org-right">Comparison</th>
+<th scope="col" class="org-right">MSE</th>
+<th scope="col" class="org-right">SSIM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+<td class="org-right">41.3184</td>
+<td class="org-right">0.954215</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-right">10</td>
+<td class="org-right">175.025</td>
+<td class="org-right">0.828449</td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-right">20</td>
+<td class="org-right">156.099</td>
+<td class="org-right">0.867492</td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-right">30</td>
+<td class="org-right">146.611</td>
+<td class="org-right">0.886603</td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-right">40</td>
+<td class="org-right">135.17</td>
+<td class="org-right">0.903326</td>
+</tr>
+</tbody>
+</table>
+
+</section>
+<section id="slide-org71cab2f">
+<h3 id="org71cab2f"><span class="section-number-3">4.4.</span> INLA</h3>
+
+<div id="orga333a54" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/Stavros/first_results/galactic_center-inla.png" alt="galactic_center-inla.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org71cab2f-split">
+
+
+<div id="org45df391" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/Stavros/first_results/HI_6563s-inla.png" alt="HI_6563s-inla.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org71cab2f-split">
+
+<div id="org313f1e3" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/Stavros/first_results/N2_6583s_missing.png" alt="N2_6583s_missing.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org71cab2f-split">
+
+
+<div id="org163582e" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/Stavros/first_results/N2_6583s_restored.png" alt="N2_6583s_restored.png" />
+</p>
+</div>
+
+</section>
+<section id="slide-org71cab2f-split">
+
+<div id="orgf9b597f" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/inla_project/Stavros/first_results/N2_6583s_error_around_mean.png" alt="N2_6583s_error_around_mean.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-org486d623">
+<h2 id="org486d623"><span class="section-number-2">5.</span> Τελικός σκοπός</h2>
+<ul>
+<li>Να βρω ποια είναι η πιο αποτελεσματική μέθοδος (μάλλον INLA)</li>
+<li>Να φτιάξω τον κώδικα έτσι ώστε:
+<ul>
+<li>Να τρέχει πάντού (επαναληψιμότητα)</li>
+<li>Να είναι εύχρηστως και αποδοτικός</li>
+
+</ul></li>
+<li><p>
+Καλά αποτελέσματα με λίγα δεδομένα
+</p>
+
+</section>
+<section id="slide-orgc7835fa-split"></li>
+
+</ul>
+
+
+<div id="org421e1e8" class="figure">
+<p><img src="file:///home/dp/Documents/praktikum/600x600cut/color_maps/color_map1_part1.png" alt="color_map1_part1.png" />
+</p>
+</div>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'https://cdn.jsdelivr.net/npm/reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+
+});
+
+</script>
+</body>
+</html>

@@ -19,7 +19,7 @@ return threshold
 | 0 | 10 | 20 | 30 | 40 |
 
 #+name: filling
-#+begin_src python :results drawer output :var path = "astropy_conv" title="Astropy's Convolution" threshold = threshold :eval no
+#+begin_src python :results drawer output :var path = "astropy_conv" title="Astropy's Convolution" threshold = threshold fitsname = "galactic_center" :eval no
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
@@ -30,18 +30,18 @@ fig, axes = plt.subplots(3, 5, figsize=(20, 12))  # Adjust the number of subplot
 
 # Iterate over different thresholds
 for idx, i in enumerate(threshold):
-    filename = "{}/filled_{}.fits".format(path,i)
+    filename = "{}/{}_filled_{}.fits".format(path, fitsname,i)
 
     # Load the image data
     img_data_filled = fits.getdata(filename)
 
     # Plot the image
     ax = axes[1,idx]
-    im = ax.imshow(img_data_filled, cmap='viridis', origin='lower', vmin=-2.0, vmax=20.0)
+    im = ax.imshow(img_data_filled, cmap='viridis', origin='lower')
     ax.set_title("Threshold {}".format(i))
     plt.colorbar(im, ax=ax, orientation='vertical', label='Intensity')
 ######### Iterate over different thresholds for the second row of subplots
-    filename = "galactic_center_masked_{}.fits".format(i)
+    filename = "{}_masked_{}.fits".format(fitsname, i)
 
     # Load the image data
     img_data_masked = fits.getdata(filename)
@@ -52,18 +52,18 @@ for idx, i in enumerate(threshold):
     plt.colorbar(im, ax=ax, orientation='vertical', label='Intensity')
 
 ######### Iterate over different diffs for the third row of subplots
-    filename = "{}/diffs_{}.fits".format(path,i)
+    filename = "{}/{}_diffs_{}.fits".format(path,fitsname, i)
 
     # Load the original image data
-    original = fits.getdata("galactic_center.fits")
+    original = fits.getdata(f"{fitsname}.fits")
 
-    img_diffs = ((original - img_data_filled)/original)*100
+    img_diffs = np.abs(((original - img_data_filled)/original))*100
 
     # Plot the image on the second row
     ax = axes[2, idx]
-    im = ax.imshow(img_diffs, cmap='viridis', origin='lower', vmin=-2.0, vmax=20.0)
-    ax.set_title("Diff = (Original - Filled({}))/Original %".format(i))
-    plt.colorbar(im, ax=ax, orientation='vertical', label='Intensity')
+    im = ax.imshow(img_diffs, cmap='viridis', origin='lower')
+    ax.set_title("(Original - Filled({}))/Original %".format(i))
+    plt.colorbar(im, ax=ax, orientation='vertical', label='Intensity(%)')
 ######### Save the Diffs
     hdu = fits.PrimaryHDU(img_diffs)
 
@@ -72,7 +72,7 @@ for idx, i in enumerate(threshold):
 # Adjust layout and display the figure
 fig.suptitle("{}".format(title))
 plt.tight_layout()
-filename = "visualizations/{}".format(title)
+filename = "visualizations/{}/{}".format(fitsname, title)
 plt.savefig(filename)
 plt.close()
 
@@ -80,20 +80,19 @@ print("[[./"+filename+".png]]")
 #+end_src
 
 #+name: comparison
-#+begin_src python :results value table :return df :var path = "" :eval no
+#+begin_src python :results drawer :return tabulate(df, headers=df.columns, tablefmt='orgtbl') :var path = "astropy_conv" fitsname = "galactic_center" :eval yes
 import numpy as np
+from tabulate import tabulate
 from skimage.metrics import structural_similarity as ssim
 from astropy.io import fits
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # Load the FITS images for the masked images
-masked_images = [fits.getdata('{}/filled_{}.fits'.format(path,i)) for i in np.arange(0, 50, 10)]
+masked_images = [fits.getdata('{}/{}_filled_{}.fits'.format(path,fitsname, i)) for i in np.arange(0, 50, 10)]
 
 # Load the corresponding original images
-original_images = fits.getdata(f'galactic_center.fits')
+original_images = fits.getdata('{}.fits'.format(fitsname))
 
-filel = "galactic_center.fits"
 
 # Calculate MSE and SSIM for each comparison
 mse_values = [np.mean((original_images - masked_images[i]) ** 2) for i in range(len(masked_images))]
@@ -104,9 +103,18 @@ data = {'Comparison': np.arange(0, 50, 10),
         'MSE': mse_values,
         'SSIM': ssim_values}
 df = pd.DataFrame(data)
-
 #+end_src
 
+#+RESULTS: comparison
+:results:
+|   | Comparison |     MSE |     SSIM |
+|---+------------+---------+----------|
+| 0 |          0 | 41.3184 | 0.954215 |
+| 1 |         10 | 175.025 | 0.828449 |
+| 2 |         20 | 156.099 | 0.867492 |
+| 3 |         30 | 146.611 | 0.886603 |
+| 4 |         40 |  135.17 | 0.903326 |
+:end:
 
 #+name:vis
 #+begin_src python :results drawer output :var filename="galactic_center.fits" name="name" :exports results
@@ -166,7 +174,9 @@ zoom = data[50:90, 60:100] * 1e5
 
 
 hdul_1 = fits.PrimaryHDU(zoom)
-hdul_1.writeto("galactic_center.fits",overwrite = True)
+gal_center = "galactic_center"
+fitsname = gal_center
+hdul_1.writeto(f"{fitsname}.fits",overwrite = True)
 
 hdul.close()
 #+end_src
@@ -187,7 +197,7 @@ for i in threshold:
     if i > 0:
         img[img > i] = np.nan
     hdu = fits.PrimaryHDU(img)
-    filename = "galactic_center_masked_{}.fits".format(i)
+    filename = "{}_masked_{}.fits".format(fitsname, i)
     hdu.writeto(filename,overwrite = True)
 
 
@@ -195,7 +205,7 @@ ig, axes = plt.subplots(1, len(threshold), figsize=(20, 4))  # Adjust the number
 
 # Iterate over different thresholds
 for idx, i in enumerate(np.arange(0, 50, 10)):
-    filename = "galactic_center_masked_{}.fits".format(i)
+    filename = "{}_masked_{}.fits".format(fitsname, i)
 
     # Load the image data
     img_data = fits.getdata(filename)
@@ -235,6 +245,8 @@ mypath = "astropy_conv"
 
 if not os.path.exists(mypath):
     os.mkdir(mypath)
+gal_center = "galactic_center"
+fitsname = gal_center
 
 #+end_src
 
@@ -243,14 +255,14 @@ Astropy's convolution replaces the NaN pixels with a kernel-weighted interpolati
 
 #+begin_src python :session astropy_convolution :results none :var threshold=threshold
 for i in threshold:
-    data = fits.open("galactic_center_masked_{}.fits".format(i))[0].data
+    data = fits.open("{}_masked_{}.fits".format(fitsname, i))[0].data
 
     kernel = Gaussian2DKernel(x_stddev=1)
     astropy_conv = convolve(data, kernel)
 
     hdu = fits.PrimaryHDU(astropy_conv)
 
-    hdu.writeto("astropy_conv/filled_{}.fits".format(i),overwrite = True)
+    hdu.writeto("astropy_conv/{}_filled_{}.fits".format(fitsname, i),overwrite = True)
 #+end_src
 
 
@@ -259,24 +271,26 @@ for i in threshold:
 
 #+RESULTS:
 :results:
-[[./visualizations/Astropy's Convolution.png]]
+[[./visualizations/galactic_center/Astropy's Convolution.png]]
 :end:
 
 #+call: comparison[:eval yes](path = "astropy_conv")
 
 #+RESULTS:
-|   | Comparison |               MSE |               SSIM |
-|---+------------+-------------------+--------------------|
-| 0 |        0.0 | 41.31836383457224 | 0.9542151726989633 |
-| 1 |       10.0 | 175.0253853352854 | 0.8284485435865382 |
-| 2 |       20.0 | 156.0987621112356 | 0.8674916390963295 |
-| 3 |       30.0 | 146.6109666965225 | 0.8866031019110286 |
-| 4 |       40.0 | 135.1704353934664 | 0.9033264570664562 |
+:results:
+|   | Comparison |     MSE |     SSIM |
+|---+------------+---------+----------|
+| 0 |          0 | 41.3184 | 0.954215 |
+| 1 |         10 | 175.025 | 0.828449 |
+| 2 |         20 | 156.099 | 0.867492 |
+| 3 |         30 | 146.611 | 0.886603 |
+| 4 |         40 |  135.17 | 0.903326 |
+:end:
 
 ** Astropy Fast Fourier Transform (FFT).
 
 This is much more efficient for larger kernels.
-#+begin_src python :session astropy_convolution :results none
+#+begin_src python :session astropy_fft :results none :var threshold=threshold
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.convolution import Gaussian2DKernel, convolve_fft
@@ -285,19 +299,21 @@ from scipy.ndimage import convolve as scipy_convolve
 import os
 
 mypath = "astropy_fft"
+gal_center = "galactic_center"
+fitsname = gal_center
 
 if not os.path.exists(mypath):
     os.mkdir(mypath)
 
 for i in threshold:
-    data = fits.open("galactic_center_masked_{}.fits".format(i))[0].data
+    data = fits.open("{}_masked_{}.fits".format(fitsname, i))[0].data
 
     kernel = Gaussian2DKernel(x_stddev=1)
-    astropy_conv = convolve(data, kernel)
+    astropy_conv = convolve_fft(data, kernel)
 
     hdu = fits.PrimaryHDU(astropy_conv)
 
-    hdu.writeto("astropy_fft/filled_{}.fits".format(i),overwrite = True)
+    hdu.writeto("astropy_fft/{}_filled_{}.fits".format(fitsname, i),overwrite = True)
 #+end_src
 
 
@@ -306,50 +322,24 @@ for i in threshold:
 
 #+RESULTS:
 :results:
-[[./visualizations/Astropy's FFT Convolution.png]]
+[[./visualizations/galactic_center/Astropy's FFT Convolution.png]]
 :end:
 
 
-#+call: comparison[:eval yes](path = "astropy_ftt")
+#+call: comparison[:eval yes](path = "astropy_fft")
 
 #+RESULTS:
-|   |
+:results:
+|   | Comparison |     MSE |     SSIM |
+|---+------------+---------+----------|
+| 0 |          0 | 41.3184 | 0.954215 |
+| 1 |         10 | 175.025 | 0.828449 |
+| 2 |         20 | 156.099 | 0.867492 |
+| 3 |         30 | 146.611 | 0.886603 |
+| 4 |         40 |  135.17 | 0.903326 |
+:end:
 
 * Python Maskfill
-
-#+begin_src python :session maskfill
-import subprocess
-
-def run_poetry_command(command):
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        if result.returncode == 0:
-            return result.stdout
-        else:
-            return result.stderr
-    except Exception as e:
-        return str(e)
-
-# Example: Install dependencies
-install_command = "poetry install"
-install_output = run_poetry_command(install_command)
-print(install_output)
-
-# Example: Add a package
-add_command = "poetry add package_name"
-add_output = run_poetry_command(add_command)
-print(add_output)
-
-# Example: Run a Python script using Poetry
-run_script_command = "poetry run python my_script.py"
-run_script_output = run_poetry_command(run_script_command)
-print(run_script_output)
-
-
-#+end_src
-
-#+RESULTS:
-: None
 
 #+begin_src python :session maskfill :results none :var x = threshold
 from astropy.io import fits
@@ -358,8 +348,11 @@ from maskfill import maskfill #download from github NOT pip
 import matplotlib.pyplot as plt
 from astropy.visualization import astropy_mpl_style
 
+gal_center = "galactic_center"
+fitsname = gal_center
+
 for i in x:
-    hdul = fits.open("galactic_center_masked_{}.fits".format(i))
+    hdul = fits.open("{}_masked_{}.fits".format(fitsname,i))
     # Get the data from the FITS file
     data = hdul[0].data
 
@@ -369,7 +362,7 @@ for i in x:
     # Access the mask array
     mask_array = masked_data.mask
 
-    maskfill.maskfill(data, mask_array,writesteps=False,output_file='maskfilled/filled_{}.fits'.format(i),verbose=True)
+    maskfill(data, mask_array,writesteps=False,output_file='maskfilled/{}_filled_{}.fits'.format(fitsname, i),verbose=True)
 
 #+end_src
 
@@ -378,19 +371,21 @@ for i in x:
 
 #+RESULTS:
 :results:
-[[./visualizations/Maskfill.png]]
+[[./visualizations/galactic_center/Maskfill.png]]
 :end:
 
 #+call: comparison[:eval yes](path = "maskfilled")
 
 #+RESULTS:
-|   | Comparison |                MSE |               SSIM |
-|---+------------+--------------------+--------------------|
-| 0 |        0.0 |                0.0 |                1.0 |
-| 1 |       10.0 | 169.59955577168992 | 0.8406528055948019 |
-| 2 |       20.0 | 150.39562244550564 | 0.8853538258497918 |
-| 3 |       30.0 | 140.01027954791735 | 0.9101794531835622 |
-| 4 |       40.0 | 125.39866935548982 | 0.9334534610339772 |
+:results:
+|   | Comparison |     MSE |     SSIM |
+|---+------------+---------+----------|
+| 0 |          0 |       0 |        1 |
+| 1 |         10 |   169.6 | 0.840653 |
+| 2 |         20 | 150.396 | 0.885354 |
+| 3 |         30 |  140.01 | 0.910179 |
+| 4 |         40 | 125.399 | 0.933453 |
+:end:
 
 * R-INLA
 
@@ -404,69 +399,18 @@ if not os.path.exists(mypath):
 
 #+end_src
 
-#+begin_src R :var threshold=threshold :results output
-# Load necessary packages
-library(INLA)
-library(IDPmisc)
-require(rasterVis)
-library(viridis)
-library(latex2exp)
-library(fields) #;library(imager);
-library(lattice);require(latticeExtra) #;require(INLAutils)
-require(classInt);require(reshape2)
-library(FITSio)
-library(magrittr) # for %>% pipe operator
 
-# Define threshold matrix from Python
-thres <- threshold
-source(paste("./inla_fct.R",sep=''))
-
-# Read fits image
-fits <- readFITS("galactic_center.fits")
-img <- fits$imDat[,]
-dims <- dim(img)
-#dims <- dim(img)
-cutoff = 0.9
-# Access data from the first HDU
-num_rows_thres <- 1:nrow(thres)
-
-print(num_rows_thres)  # Check the values of num_rows_thres
-
-# Iterate over the rows of the thres matrix
-for (j in num_rows_thres) {
-  i = thres[j,1]
-        filename <- sprintf("galactic_center_masked_%d", i)
-        fits_file <- readFITS(file=paste(filename,"fits",sep='.'))
-        img <- fits$imDat[,]
-        dims <- dim(img)
-        # Create x and y arrays using matrix indexing
-        x <- matrix(rep(1:dims[1], dims[2]), nrow = dims[1], ncol = dims[2])
-        y <- matrix(rep(1:dims[2], each = dims[1]), nrow = dims[1], ncol = dims[2])
-
-        valid <- which(!(is.na(img)))
-
-        xsize <- dims[2]
-        ysize <- dims[1]
-        xfin <- xsize
-        yfin <- ysize
-        logimg = log10(img)
-
-      #  imginla <- stationary_inla(x[valid],y[valid],logimg[valid], zoom = 1,
-       #                         xsize=xsize,shape='none',xfin=xfin,
-        #                        yfin=yfin,ysize=ysize,cutoff=cutoff,
-         #                       tolerance=1e-6,restart=0)
-  imginla <- nonparametric_inla(x,y,logimg, xsize = xsize, ysize = ysize, tepar = "NaN", weight = 1)
-        writeFITSim(imginla$outsd,file=sprintf("r-inla/filled_%d.fits",i))
-}
-
-#+end_src
-
-
-#+call: vis[:var filename = "./r-inla/filled_30.fits"]
+#+call: vis[:var filename = "./r-inla/galactic_center_filled_40.fits"]
 
 #+RESULTS:
 :results:
 [[./visualizations/name.png]]
+:end:
+
+#+call: filling[:eval yes](path = "r-inla", title="Astropy's Convolution")
+
+#+RESULTS:
+:results:
 :end:
 
 * Comparisons
@@ -500,34 +444,40 @@ for (j in num_rows_thres) {
 #+call: comparison[:eval yes](path = "astropy_conv")
 
 #+RESULTS:
-|   | Comparison |               MSE |               SSIM |
-|---+------------+-------------------+--------------------|
-| 0 |        0.0 | 41.31836383457224 | 0.9542151726989633 |
-| 1 |       10.0 | 175.0253853352854 | 0.8284485435865382 |
-| 2 |       20.0 | 156.0987621112356 | 0.8674916390963295 |
-| 3 |       30.0 | 146.6109666965225 | 0.8866031019110286 |
-| 4 |       40.0 | 135.1704353934664 | 0.9033264570664562 |
+:results:
+|    |   Comparison |      MSE |     SSIM |
+|----+--------------+----------+----------|
+|  0 |            0 |  41.3184 | 0.954215 |
+|  1 |           10 | 175.025  | 0.828449 |
+|  2 |           20 | 156.099  | 0.867492 |
+|  3 |           30 | 146.611  | 0.886603 |
+|  4 |           40 | 135.17   | 0.903326 |
+:end:
 
 ** Astropy fft
 #+call: comparison[:eval yes](path = "astropy_fft")
 
 #+RESULTS:
-|   | Comparison |               MSE |               SSIM |
-|---+------------+-------------------+--------------------|
-| 0 |        0.0 | 41.31836383457224 | 0.9542151726989633 |
-| 1 |       10.0 | 175.0253853352854 | 0.8284485435865382 |
-| 2 |       20.0 | 156.0987621112356 | 0.8674916390963295 |
-| 3 |       30.0 | 146.6109666965225 | 0.8866031019110286 |
-| 4 |       40.0 | 135.1704353934664 | 0.9033264570664562 |
+:results:
+|    |   Comparison |      MSE |     SSIM |
+|----+--------------+----------+----------|
+|  0 |            0 |  41.3184 | 0.954215 |
+|  1 |           10 | 175.025  | 0.828449 |
+|  2 |           20 | 156.099  | 0.867492 |
+|  3 |           30 | 146.611  | 0.886603 |
+|  4 |           40 | 135.17   | 0.903326 |
+:end:
 
 ** Maskfill
 #+call: comparison[:eval yes](path = "maskfilled")
 
 #+RESULTS:
-|   | Comparison |                MSE |               SSIM |
-|---+------------+--------------------+--------------------|
-| 0 |        0.0 |                0.0 |                1.0 |
-| 1 |       10.0 | 169.59955577168992 | 0.8406528055948019 |
-| 2 |       20.0 | 150.39562244550564 | 0.8853538258497918 |
-| 3 |       30.0 | 140.01027954791735 | 0.9101794531835622 |
-| 4 |       40.0 | 125.39866935548982 | 0.9334534610339772 |
+:results:
+|    |   Comparison |     MSE |     SSIM |
+|----+--------------+---------+----------|
+|  0 |            0 |   0     | 1        |
+|  1 |           10 | 169.6   | 0.840653 |
+|  2 |           20 | 150.396 | 0.885354 |
+|  3 |           30 | 140.01  | 0.910179 |
+|  4 |           40 | 125.399 | 0.933453 |
+:end:

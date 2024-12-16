@@ -27,7 +27,7 @@ outfile <- paste(file,"inla",sep='-')
 eroutfile <- paste(file,"erinla",sep='-')
 
 #read file
-fits <- readFITS(file=paste(file,"fit",sep='.'))
+fits <- readFITS(file=paste(file,"fits",sep='.'))
 img <- fits$imDat[,]
 
 
@@ -46,8 +46,9 @@ cutoff <- 0.9 #bit lower than minimum distance
 
 subset_img <- img[1:20, 1:20]  # This will extract the top-left 20x20 portion of the img array
 
-### x and y
-dim <- dim(img)
+
+## x and y
+dims <- dim(img)
 x <- array(0,dim=dim)
 y <- array(0,dim=dim)
 for (i in 1:dim[1]){
@@ -57,10 +58,11 @@ for (i in 1:dim[1]){
     }
 }
 
+
 ##valid data
 valid <- which(!(img < 27 | is.na(img)))
-xsize <- dim[2]
-ysize <- dim[1]
+xsize <- dims[2]
+ysize <- dims[1]
 xfin <- xsize
 yfin <- ysize
 

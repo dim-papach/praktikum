@@ -14,9 +14,12 @@ library(fields) #;library(imager);
 library(lattice);require(latticeExtra) #;require(INLAutils)
 require(classInt);require(reshape2)
 library(FITSio)
+library(MASS)
+
 library(rmarkdown)
 
 ```
+
 
 ## Starry night or how to set a new color pallet
 
@@ -53,19 +56,19 @@ source(paste("./inla_fct.R",sep=''))
 name <- "stavros"
 
 dir <- paste("./first_results/",sep='')
-file <- paste(dir,"HI_6563s",sep='')
+file <- paste(dir,"galactic_center_masked_10",sep='')
 outfile <- paste(file,"inla",sep='-')
 eroutfile <- paste(file,"erinla",sep='-')
 
 #read file
-fits <- readFITS(file=paste(file,"fit",sep='.'))
+fits <- readFITS(file=paste(file,"fits",sep='.'))
 img <- fits$imDat[,]
 ```
 
 # Data Preparation
 
 ```{r}
-subset_img <- img[1:20, 1:20]  # This will extract the top-left 20x20 portion of the img array
+subset_img <- img[1:40, 1:40]  # This will extract the top-left 20x20 portion of the img array
 ```
 
 WHY ONLY THE TOP PART?????
@@ -95,7 +98,7 @@ y <- matrix(rep(1:dims[2], each = dims[1]), nrow = dims[1], ncol = dims[2])
 
 
 ##valid data
-valid <- which(!(img < 20 | is.na(img)))
+valid <- which(!(is.na(img)))
 xsize <- dims[2]
 ysize <- dims[1]
 xfin <- xsize
@@ -112,11 +115,10 @@ function(tx, ty, tpar, tepar, weight=1, zoom = 1,... What is tx,ty,tpar,tepar???
 
 ```{r}
 ## INLA
-imginla <- stationary_inla(x[valid],y[valid],logimg[valid],zoom=zoom,
-                           xsize=xsize,shape='none',xfin=xfin,
-                           yfin=yfin,ysize=ysize,cutoff=cutoff,
-                           tolerance=1e-6,restart=0)
+#imginla <- nonparametric_inla(x[valid],y[valid],logimg[valid], xsize=xsize,ysize=ysize)
 
+m_weights <- rep(1, nrow(cbind(x, y)))
+imginla <- stationary_inla(x[valid],y[valid],logimg[valid],zoom=zoom,xsize=xsize,shape='none',xfin=xfin,yfin=yfin,ysize=ysize,cutoff=cutoff,tolerance=1e-6,restart=0L)
 # placeholder for NaN = 0
 imginla[is.nan(imginla$out[valid])] <- 0
 logimg[is.nan(logimg[valid])] <- 0

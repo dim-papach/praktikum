@@ -1,19 +1,18 @@
 [tool.poetry]
-name = "compare"
+name = "mask"
 version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
-readme = ""
+description = "using the maskfill package to remove LIS"
+authors = ["dim-papach <dipapachristopoulos@gmail.com>"]
+readme = "README.org"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 maskfill = {git = "https://github.com/dokkum/maskfill.git"}
-astropy = "^6.0.0"
-numpy = "^1.26.4"
-matplotlib = "^3.8.3"
-package-name = "^0.1"
+matplotlib = "^3.8.2"
+scikit-image = "^0.22.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+package-mode = false

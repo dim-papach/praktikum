@@ -38,7 +38,6 @@ def vis(mask,name, mask_description):
     return fname
 
 def vis_1(data, name):
-
     fname = "visualizations/" + name + ".png"
 
     plt.style.use(astropy_mpl_style)
@@ -235,13 +234,45 @@ fname
 
 ***** [?] maybe it is better to use 3$\sigma$
 
+** Saving the masked FITS
+
+#+begin_src python
+mask = masks[2]
+h_masked = np.ma.masked_where(mask, h_data)
+n_masked = np.ma.masked_where(mask, n_data)
+o_masked = np.ma.masked_where(mask, o_data)
+h_masked_filled = h_masked.filled(np.nan)
+
+# Mask and save H-alpha data
+h_masked_filled = h_masked.filled(np.nan)
+h_hdu = fits.PrimaryHDU(h_masked_filled)
+h_hdul = fits.HDUList([h_hdu])
+h_hdul.writeto('HI_6563s_masked.fits', overwrite=True)
+
+# Mask and save OI data
+o_masked = np.ma.masked_where(mask, o_data)
+o_masked_filled = o_masked.filled(np.nan)
+o_hdu = fits.PrimaryHDU(o_masked_filled)
+o_hdul = fits.HDUList([o_hdu])
+o_hdul.writeto('O1_6300s_masked.fits', overwrite=True)
+
+# Mask and save NII data
+n_masked = np.ma.masked_where(mask, n_data)
+n_masked_filled = n_masked.filled(np.nan)
+n_hdu = fits.PrimaryHDU(n_masked_filled)
+n_hdul = fits.HDUList([n_hdu])
+n_hdul.writeto('N2_6583s_masked.fits', overwrite=True)
+
+print("Masked FITS files saved as 'HI_6563s_masked.fits', 'O1_6300s_masked.fits', and 'N2_6583s_masked.fits'")
+#+end_src
+
+#+RESULTS:
+: None
 
 * Use Maskfill
 
 #+begin_src python :results none
-mask = masks[2]
-h_masked = np.ma.masked_where(mask, h_data)
-n_masked = np.ma.masked_where(mask, n_data)
+
 
 h_fill = maskfill.maskfill(h_data, h_masked.mask,writesteps=False,output_file='H_fill.fits',verbose=True)
 
@@ -254,7 +285,7 @@ fill_vis(h_masked, h_data, h_fill, "HI_fill", "HI")
 #+end_src
 
 #+RESULTS:
-[[file:visualizations/HI_fill.png]]
+[[file:]]
 
 
 #+begin_src python :results drawer file link
@@ -263,4 +294,6 @@ fill_vis(n_masked, n_masked.data, n_fill, "NII_fill", "NII")
 #+end_src
 
 #+RESULTS:
-[[file:visualizations/NII_fill.png]]
+[[file:]]
+*
+*
