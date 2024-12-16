@@ -38,5 +38,5 @@ rix(r_ver = "latest",
     ide = "rstudio",
     project_path = path_to_project,
     overwrite = TRUE,
-    print = TRUE)
+    print = FALSE)
 
